@@ -213,31 +213,31 @@
                     <!-- Player hands will be inserted here -->
                 </div>
 
-                <!-- Your Actions (shown when it's your turn) -->
+                <!-- Action Buttons (shown when it's your turn) -->
                 <div class="action-buttons" id="mp-action-buttons" style="display: none;">
                     <button class="action-btn hit" onclick="mpPlayerAction('hit')">HIT</button>
                     <button class="action-btn stand" onclick="mpPlayerAction('stand')">STAND</button>
                     <button class="action-btn double" onclick="mpPlayerAction('double')">DOUBLE</button>
                     <button class="action-btn surrender" onclick="mpPlayerAction('surrender')">SURRENDER</button>
                 </div>
-            </div>
-        </div>
 
-        <!-- Betting Overlay -->
-        <div id="mp-betting-overlay" class="betting-overlay" style="display: none;">
-            <h2>Place Your Bet</h2>
-            <div class="mp-bankroll">Bankroll: $<span id="mp-my-bankroll">1000</span></div>
-            <div class="mp-current-bet">Current Bet: $<span id="mp-my-bet">0</span></div>
-            <div class="chip-container">
-                <div class="chip chip-5" onclick="mpSelectBet(5)">5</div>
-                <div class="chip chip-10" onclick="mpSelectBet(10)">10</div>
-                <div class="chip chip-25" onclick="mpSelectBet(25)">25</div>
-                <div class="chip chip-50" onclick="mpSelectBet(50)">50</div>
-                <div class="chip chip-100" onclick="mpSelectBet(100)">100</div>
-            </div>
-            <div class="action-buttons">
-                <button class="btn btn-primary" onclick="mpConfirmBet()">Place Bet</button>
-                <button class="btn btn-outline" onclick="mpSelectBet(-1)">Clear</button>
+                <!-- Betting Area -->
+                <div class="betting-area" id="mp-betting-area" style="display: none;">
+                    <div class="chip-stack">
+                        <div class="chip chip-5" onclick="mpSelectBet(5)">5</div>
+                        <div class="chip chip-25" onclick="mpSelectBet(25)">25</div>
+                        <div class="chip chip-100" onclick="mpSelectBet(100)">100</div>
+                    </div>
+                    <div class="current-bet">
+                        <span>Bet: $</span><span id="mp-my-bet">0</span>
+                    </div>
+                    <button class="btn btn-primary" onclick="mpConfirmBet()">Place Bet</button>
+                </div>
+
+                <!-- Bankroll -->
+                <div class="bankroll">
+                    <span>Bankroll: $</span><span id="mp-my-bankroll">1000</span>
+                </div>
             </div>
         </div>
 
@@ -255,7 +255,6 @@
     </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="cards.js"></script>
     <script src="game.js"></script>
     <script src="ui.js"></script>

@@ -227,6 +227,7 @@ async function updatePresence() {
 async function broadcastGameState(state) {
     if (!roomChannel) return;
 
+    console.log('Broadcasting game state', state);
     await roomChannel.send({
         type: 'broadcast',
         event: 'game_state',
@@ -415,6 +416,7 @@ function dealMultiplayerRound(state) {
 
 
 function handleGameStateUpdate(state) {
+    console.log('Received game state update', state);
     RoomState.gameState = state;
 
     if (state.phase === 'playing') {
@@ -425,6 +427,7 @@ function handleGameStateUpdate(state) {
 }
 
 function handlePlayerAction({ playerId, action, data }) {
+    console.log('Handling player action', { playerId, action, data });
     if (!RoomState.isHost) return;
 
     // Host processes action and broadcasts new state
@@ -470,6 +473,9 @@ function handlePlayerAction({ playerId, action, data }) {
             break;
 
         case 'double':
+            // Double the bet
+            state.bets[playerId] = (state.bets[playerId] || 0) * 2;
+
             const dCard = state.shoeCards.pop();
             playerHand.cards.push(dCard);
             const dHand = recreateHand(playerHand.cards);
@@ -579,27 +585,42 @@ function renderMultiplayerGame() {
     if (!state) return;
 
     // BETTING UI
-    const bettingOverlay = document.getElementById('mp-betting-overlay');
-    if (state.phase === 'betting') {
-        bettingOverlay.style.display = 'flex';
-        // Sync bankroll logic
-        const myBankroll = state.playerBankrolls[RoomState.playerId] || 1000;
-        RoomState.bankroll = myBankroll; // Sync local
-        document.getElementById('mp-my-bankroll').textContent = myBankroll;
-        document.getElementById('mp-my-bet').textContent = RoomState.currentBet;
+    // BETTING UI
+    const bettingArea = document.getElementById('mp-betting-area');
+    const myBet = state.bets[RoomState.playerId] || 0;
 
-        // Show status of other players
-        const statusEl = document.getElementById('mp-game-status');
-        const betCount = Object.values(state.bets).filter(b => b > 0).length;
-        statusEl.textContent = `Betting Phase: ${betCount}/${RoomState.players.length} players ready`;
+    if (state.phase === 'betting') {
+        const myBankroll = state.playerBankrolls[RoomState.playerId] || 1000;
+        RoomState.bankroll = myBankroll; // Sync local bankroll
+        document.getElementById('mp-my-bankroll').textContent = myBankroll;
+
+        if (myBet > 0) {
+            // Already bet, waiting for others
+            bettingArea.style.display = 'none';
+            const statusEl = document.getElementById('mp-game-status');
+            const betCount = Object.values(state.bets).filter(b => b > 0).length;
+            statusEl.textContent = `Bet Placed: $${myBet}. Waiting for others (${betCount}/${RoomState.players.length})...`;
+        } else {
+            // Need to bet
+            bettingArea.style.display = 'flex';
+            document.getElementById('mp-my-bet').textContent = RoomState.currentBet;
+
+            const statusEl = document.getElementById('mp-game-status');
+            const betCount = Object.values(state.bets).filter(b => b > 0).length;
+            statusEl.textContent = `Betting Phase: ${betCount}/${RoomState.players.length} players ready`;
+        }
         return; // Don't render hands yet
     } else {
-        bettingOverlay.style.display = 'none';
+        bettingArea.style.display = 'none';
 
         // Update local bankroll from state result
         if (state.phase === 'results') {
             RoomState.bankroll = state.playerBankrolls[RoomState.playerId];
+            document.getElementById('mp-my-bankroll').textContent = RoomState.bankroll;
             updatePresence(); // Sync to lobby
+        } else {
+            // Update bankroll display during other phases too
+            document.getElementById('mp-my-bankroll').textContent = state.playerBankrolls[RoomState.playerId];
         }
     }
 
@@ -720,7 +741,7 @@ async function mpConfirmBet() {
     }
 
     // Disable buttons
-    document.querySelector('#mp-betting-overlay .action-buttons').style.display = 'none';
+    // document.querySelector('#mp-betting-overlay .action-buttons').style.display = 'none'; // REMOVED
     showToast('✓', 'Bet Placed. Waiting for others...');
 
     await broadcastAction('bet', { amount: RoomState.currentBet });

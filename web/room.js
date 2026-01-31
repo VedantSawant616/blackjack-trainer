@@ -42,6 +42,8 @@ const RoomState = {
     players: [],
     isReady: false,
     gameState: null,
+    bankroll: 1000,
+    currentBet: 0,
 
     reset() {
         this.roomCode = null;
@@ -51,6 +53,8 @@ const RoomState = {
         this.players = [];
         this.isReady = false;
         this.gameState = null;
+        this.bankroll = 1000;
+        this.currentBet = 0;
     }
 };
 
@@ -214,6 +218,7 @@ async function updatePresence() {
         name: RoomState.playerName,
         isHost: RoomState.isHost,
         isReady: RoomState.isReady,
+        bankroll: RoomState.bankroll,
         hand: RoomState.gameState?.playerHands?.[RoomState.playerId] || null,
         status: RoomState.gameState?.playerStatuses?.[RoomState.playerId] || 'waiting'
     });
@@ -335,13 +340,46 @@ async function leaveRoom() {
 async function startMultiplayerGame() {
     if (!RoomState.isHost) return;
 
-    // Create initial game state
+    // 1. Initialize Bankrolls from current state or default
+    const previousBankrolls = RoomState.gameState?.playerBankrolls || {};
+    const playerBankrolls = {};
+    const bets = {};
+
+    RoomState.players.forEach(p => {
+        // Use synced bankroll from presence or previous game
+        playerBankrolls[p.id] = p.bankroll || 1000;
+        bets[p.id] = 0;
+    });
+
+    // 2. Start Betting Phase
+    const gameState = {
+        phase: 'betting',
+        playerBankrolls,
+        bets,
+        playerHands: {},
+        playerStatuses: {},
+        dealerHand: { cards: [], value: 0 },
+        shoeCards: [] // Will init later
+    };
+
+    RoomState.gameState = gameState;
+    await broadcastGameState(gameState);
+
+    // UI update handled by broadcast receiver
+    showScreen('multiplayer-game');
+    renderMultiplayerGame();
+}
+
+function dealMultiplayerRound(state) {
+    if (!RoomState.isHost) return;
+
+    // Create Shoe & Deal
     const shoe = new Shoe(0.75);
     const dealerHand = new Hand();
     const playerHands = {};
     const playerStatuses = {};
 
-    // Deal 2 cards to each player
+    // Deal 2 cards
     RoomState.players.forEach(player => {
         const hand = new Hand();
         hand.addCard(shoe.deal());
@@ -356,29 +394,24 @@ async function startMultiplayerGame() {
         playerStatuses[player.id] = 'playing';
     });
 
-    // Deal to dealer
     dealerHand.addCard(shoe.deal());
     dealerHand.addCard(shoe.deal());
 
-    const gameState = {
-        phase: 'playing',
-        currentPlayerIndex: 0,
-        currentPlayerId: RoomState.players[0].id,
-        playerHands,
-        playerStatuses,
-        dealerHand: {
-            cards: dealerHand.cards.map(c => ({ rank: c.rank, suit: c.suit })),
-            value: dealerHand.value,
-            showHoleCard: false
-        },
-        shoeCards: shoe.deck.cards.map(c => ({ rank: c.rank, suit: c.suit }))
+    state.phase = 'playing';
+    state.currentPlayerIndex = 0;
+    state.currentPlayerId = RoomState.players[0].id;
+    state.playerHands = playerHands;
+    state.playerStatuses = playerStatuses; // Keep bankrolls/bets
+    state.dealerHand = {
+        cards: dealerHand.cards.map(c => ({ rank: c.rank, suit: c.suit })),
+        value: dealerHand.value,
+        showHoleCard: false
     };
+    state.shoeCards = shoe.deck.cards.map(c => ({ rank: c.rank, suit: c.suit }));
 
-    RoomState.gameState = gameState;
-
-    await broadcastGameState(gameState);
-    showScreen('multiplayer-game');
+    broadcastGameState(state);
     renderMultiplayerGame();
+}
 }
 
 function handleGameStateUpdate(state) {
@@ -396,8 +429,23 @@ function handlePlayerAction({ playerId, action, data }) {
 
     // Host processes action and broadcasts new state
     const state = RoomState.gameState;
-    const playerHand = state.playerHands[playerId];
 
+    // Betting Phase Exception
+    if (action === 'bet') {
+        if (state.phase !== 'betting') return;
+        state.bets[playerId] = data.amount;
+
+        const allBet = RoomState.players.every(p => state.bets[p.id] > 0);
+        if (allBet) {
+            dealMultiplayerRound(state);
+        } else {
+            broadcastGameState(state);
+            renderMultiplayerGame();
+        }
+        return;
+    }
+
+    const playerHand = state.playerHands[playerId];
     if (!playerHand || state.playerStatuses[playerId] !== 'playing') return;
 
     switch (action) {
@@ -489,22 +537,36 @@ function determineResults(state) {
     Object.keys(state.playerHands).forEach(playerId => {
         const playerHand = state.playerHands[playerId];
         const status = state.playerStatuses[playerId];
+        const bet = state.bets[playerId] || 0;
+        let payout = 0;
 
         if (status === 'surrendered') {
             playerHand.result = 'surrendered';
+            payout = bet * 0.5;
         } else if (status === 'busted') {
             playerHand.result = 'lose';
-        } else if (playerHand.isBlackjack) {
+            payout = 0;
+        } else if (playerHand.isBlackjack && !state.dealerHand.isBlackjack) {
             playerHand.result = 'blackjack';
+            payout = bet * 2.5;
         } else if (dealerBusted) {
             playerHand.result = 'win';
+            payout = bet * 2;
         } else if (playerHand.value > dealerValue) {
             playerHand.result = 'win';
+            payout = bet * 2;
         } else if (playerHand.value < dealerValue) {
             playerHand.result = 'lose';
+            payout = 0;
         } else {
             playerHand.result = 'push';
+            payout = bet;
         }
+
+        // Update bankroll (bankrolls already had bets not deducted?? No, we didn't deduct yet)
+        // Let's assume bankrolls in state are 'start of round'. 
+        // So we subtract bet and add payout.
+        state.playerBankrolls[playerId] = (state.playerBankrolls[playerId] || 1000) - bet + payout;
     });
 }
 
@@ -515,6 +577,31 @@ function determineResults(state) {
 function renderMultiplayerGame() {
     const state = RoomState.gameState;
     if (!state) return;
+
+    // BETTING UI
+    const bettingOverlay = document.getElementById('mp-betting-overlay');
+    if (state.phase === 'betting') {
+        bettingOverlay.style.display = 'flex';
+        // Sync bankroll logic
+        const myBankroll = state.playerBankrolls[RoomState.playerId] || 1000;
+        RoomState.bankroll = myBankroll; // Sync local
+        document.getElementById('mp-my-bankroll').textContent = myBankroll;
+        document.getElementById('mp-my-bet').textContent = RoomState.currentBet;
+
+        // Show status of other players
+        const statusEl = document.getElementById('mp-game-status');
+        const betCount = Object.values(state.bets).filter(b => b > 0).length;
+        statusEl.textContent = `Betting Phase: ${betCount}/${RoomState.players.length} players ready`;
+        return; // Don't render hands yet
+    } else {
+        bettingOverlay.style.display = 'none';
+
+        // Update local bankroll from state result
+        if (state.phase === 'results') {
+            RoomState.bankroll = state.playerBankrolls[RoomState.playerId];
+            updatePresence(); // Sync to lobby
+        }
+    }
 
     // Render dealer
     const dealerContainer = document.getElementById('mp-dealer-cards');
@@ -558,6 +645,7 @@ function renderMultiplayerGame() {
             <div class="mp-player-cards">${cardsHtml}</div>
             <div class="mp-player-value">${handData.value} ${handData.isSoft ? '(soft)' : ''}</div>
             ${handData.result ? `<div class="mp-player-result ${resultClass}">${handData.result.toUpperCase()}</div>` : ''}
+            ${state.phase === 'playing' || state.phase === 'results' ? `<div class="mp-player-bankroll">$${state.playerBankrolls[player.id]} (Bet: $${state.bets[player.id]})</div>` : ''}
             ${isCurrentTurn ? '<div class="turn-indicator">YOUR TURN</div>' : ''}
         `;
 
@@ -589,6 +677,13 @@ function renderMultiplayerGame() {
     } else {
         document.getElementById('mp-turn-indicator').textContent = isYourTurn ? 'Your Turn!' : 'Waiting...';
     }
+
+    // Also render bankrolls in hand view
+    RoomState.players.forEach(p => {
+        // Find element
+        // This is sloppy since handEl is regen every time.
+        // We should add bankroll to hand HTML in render loop.
+    });
 }
 
 async function mpPlayerAction(action) {
@@ -606,6 +701,33 @@ async function mpPlayerAction(action) {
 // EXPORTS
 // ============================================================================
 
+// Helper functions for UI
+function mpSelectBet(amount) {
+    if (amount === -1) {
+        RoomState.currentBet = 0;
+    } else {
+        if (RoomState.currentBet + amount <= RoomState.bankroll) {
+            RoomState.currentBet += amount;
+        }
+    }
+    renderMultiplayerGame();
+}
+
+async function mpConfirmBet() {
+    if (RoomState.currentBet <= 0) {
+        showToast('!', 'Place a bet first');
+        return;
+    }
+
+    // Disable buttons
+    document.querySelector('#mp-betting-overlay .action-buttons').style.display = 'none';
+    showToast('✓', 'Bet Placed. Waiting for others...');
+
+    await broadcastAction('bet', { amount: RoomState.currentBet });
+
+    // Host will process logic
+}
+
 window.createRoom = createRoom;
 window.joinRoom = joinRoom;
 window.toggleReady = toggleReady;
@@ -613,4 +735,6 @@ window.copyRoomCode = copyRoomCode;
 window.leaveRoom = leaveRoom;
 window.startMultiplayerGame = startMultiplayerGame;
 window.mpPlayerAction = mpPlayerAction;
+window.mpSelectBet = mpSelectBet;
+window.mpConfirmBet = mpConfirmBet;
 window.RoomState = RoomState;

@@ -701,7 +701,6 @@ function classicDealHand() {
     // Hide betting, show actions
     elements.classicBettingArea.style.display = 'none';
     elements.classicActionButtons.style.display = 'block'; // Block ensures full width container
-    elements.classicActionButtons.querySelector('.control-bar').style.display = 'flex'; // Ensure flex layout
     elements.classicGameStatus.textContent = 'Your Turn';
 
     classicUpdateActionButtons();

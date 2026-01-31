@@ -590,19 +590,20 @@ function showToast(icon, message) {
 // KEYBOARD SHORTCUTS
 // ============================================================================
 
-if (GameState.currentMode === 'classic') {
-    // Classic mode shortcuts could be added here if needed
-}
-
-if (e.key === 'Escape') {
-    if (elements.settingsPanel.classList.contains('active')) {
-        toggleSettings();
-    } else if (elements.countCheckModal.classList.contains('active')) {
-        elements.countCheckModal.classList.remove('active');
-    } else {
-        backToMenu();
+document.addEventListener('keydown', (e) => {
+    if (GameState.currentMode === 'classic') {
+        // Classic mode shortcuts could be added here if needed
     }
-}
+
+    if (e.key === 'Escape') {
+        if (elements.settingsPanel && elements.settingsPanel.classList.contains('active')) {
+            toggleSettings();
+        } else if (elements.countCheckModal && elements.countCheckModal.classList.contains('active')) {
+            elements.countCheckModal.classList.remove('active');
+        } else {
+            backToMenu();
+        }
+    }
 });
 
 // ============================================================================

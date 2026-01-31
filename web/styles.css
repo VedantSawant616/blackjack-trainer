@@ -1156,7 +1156,7 @@ body {
     border: 2px solid var(--border);
     border-radius: 12px;
     padding: 1rem;
-    min-width: 180px;
+    min-width: 220px;
     text-align: center;
     transition: all 0.3s ease;
 }
@@ -1180,15 +1180,13 @@ body {
 .mp-player-cards {
     display: flex;
     justify-content: center;
-    gap: -20px;
+    gap: 0.5rem;
     margin: 0.5rem 0;
 }
 
 .mp-player-cards .card {
-    width: 50px;
-    height: 70px;
-    font-size: 0.8rem;
-    margin-left: -15px;
+    /* Standard card size inherited */
+    margin-left: 0;
 }
 
 .mp-player-cards .card:first-child {

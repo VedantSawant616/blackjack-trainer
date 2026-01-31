@@ -382,19 +382,25 @@ function dealMultiplayerRound(state) {
     const playerHands = {};
     const playerStatuses = {};
 
-    // Deal 2 cards
+    // Deal 2 cards - NOW USING ARRAY STRUCTURE FOR SPLITS
     RoomState.players.forEach(player => {
         const hand = new Hand();
         hand.addCard(shoe.deal());
         hand.addCard(shoe.deal());
-        playerHands[player.id] = {
+
+        // Store as array to support splits
+        playerHands[player.id] = [{
             cards: hand.cards.map(c => ({ rank: c.rank, suit: c.suit })),
             value: hand.value,
             isSoft: hand.isSoft,
             isBusted: hand.isBusted,
-            isBlackjack: hand.isBlackjack
-        };
+            isBlackjack: hand.isBlackjack,
+            bet: state.bets[player.id] // Track bet per hand
+        }];
+
         playerStatuses[player.id] = 'playing';
+        state.currentHandIndex = state.currentHandIndex || {};
+        state.currentHandIndex[player.id] = 0; // Start with first hand
     });
 
     dealerHand.addCard(shoe.deal());
@@ -452,8 +458,11 @@ function handlePlayerAction({ playerId, action, data }) {
         return;
     }
 
-    const playerHand = state.playerHands[playerId];
-    if (!playerHand || state.playerStatuses[playerId] !== 'playing') return;
+    const playerHandsArray = state.playerHands[playerId];
+    if (!playerHandsArray || state.playerStatuses[playerId] !== 'playing') return;
+
+    const handIndex = state.currentHandIndex[playerId] || 0;
+    const playerHand = playerHandsArray[handIndex];
 
     switch (action) {
         case 'hit':
@@ -466,20 +475,18 @@ function handlePlayerAction({ playerId, action, data }) {
             playerHand.isBusted = hand.isBusted;
 
             if (hand.isBusted || hand.value === 21) {
-                state.playerStatuses[playerId] = hand.isBusted ? 'busted' : 'stood';
-                advanceToNextPlayer(state);
+                advanceToNextHand(state, playerId);
             }
             break;
 
         case 'stand':
-            state.playerStatuses[playerId] = 'stood';
-            advanceToNextPlayer(state);
+            advanceToNextHand(state, playerId);
             break;
 
         case 'double':
-            // Double the bet
-            const originalBet = state.bets[playerId] || 0;
-            state.bets[playerId] = originalBet * 2;
+            // Double the bet for this hand
+            const originalBet = playerHand.bet || 0;
+            playerHand.bet = originalBet * 2;
             state.playerBankrolls[playerId] -= originalBet;
 
             const dCard = state.shoeCards.pop();
@@ -488,18 +495,72 @@ function handlePlayerAction({ playerId, action, data }) {
             playerHand.value = dHand.value;
             playerHand.isSoft = dHand.isSoft;
             playerHand.isBusted = dHand.isBusted;
-            state.playerStatuses[playerId] = dHand.isBusted ? 'busted' : 'stood';
-            advanceToNextPlayer(state);
+            advanceToNextHand(state, playerId);
+            break;
+
+        case 'split':
+            // Validate: must be a pair and have enough bankroll
+            if (playerHand.cards.length !== 2) break;
+            const firstCard = playerHand.cards[0];
+            const secondCard = playerHand.cards[1];
+            if (firstCard.rank !== secondCard.rank) break;
+
+            const splitBet = playerHand.bet;
+            if (state.playerBankrolls[playerId] < splitBet) {
+                console.log('Insufficient funds to split');
+                break;
+            }
+
+            // Deduct split bet from bankroll
+            state.playerBankrolls[playerId] -= splitBet;
+
+            // Create second hand
+            const newHand = {
+                cards: [secondCard, state.shoeCards.pop()],
+                bet: splitBet
+            };
+            const newHandObj = recreateHand(newHand.cards);
+            newHand.value = newHandObj.value;
+            newHand.isSoft = newHandObj.isSoft;
+            newHand.isBusted = newHandObj.isBusted;
+            newHand.isBlackjack = false; // Splits can't be blackjack
+
+            // Update first hand (keep first card, deal new card)
+            playerHand.cards = [firstCard, state.shoeCards.pop()];
+            const firstHandObj = recreateHand(playerHand.cards);
+            playerHand.value = firstHandObj.value;
+            playerHand.isSoft = firstHandObj.isSoft;
+            playerHand.isBusted = firstHandObj.isBusted;
+            playerHand.isBlackjack = false;
+
+            // Insert new hand after current hand
+            playerHandsArray.splice(handIndex + 1, 0, newHand);
             break;
 
         case 'surrender':
-            state.playerStatuses[playerId] = 'surrendered';
-            advanceToNextPlayer(state);
+            playerHand.result = 'surrendered';
+            advanceToNextHand(state, playerId);
             break;
     }
 
     broadcastGameState(state);
     renderMultiplayerGame();
+}
+
+
+function advanceToNextHand(state, playerId) {
+    const playerHandsArray = state.playerHands[playerId];
+    const currentIndex = state.currentHandIndex[playerId] || 0;
+
+    // Check if there are more hands for this player (splits)
+    if (currentIndex + 1 < playerHandsArray.length) {
+        // Move to next split hand
+        state.currentHandIndex[playerId] = currentIndex + 1;
+    } else {
+        // All hands done for this player, mark as done and advance to next player
+        state.playerStatuses[playerId] = 'stood';
+        advanceToNextPlayer(state);
+    }
 }
 
 function advanceToNextPlayer(state) {
@@ -547,36 +608,41 @@ function determineResults(state) {
     const dealerBusted = state.dealerHand.isBusted;
 
     Object.keys(state.playerHands).forEach(playerId => {
-        const playerHand = state.playerHands[playerId];
-        const status = state.playerStatuses[playerId];
-        const bet = state.bets[playerId] || 0;
-        let payout = 0;
+        const playerHandsArray = state.playerHands[playerId];
+        let totalPayout = 0;
 
-        if (status === 'surrendered') {
-            playerHand.result = 'surrendered';
-            payout = bet * 0.5;
-        } else if (status === 'busted') {
-            playerHand.result = 'lose';
-            payout = 0;
-        } else if (playerHand.isBlackjack && !state.dealerHand.isBlackjack) {
-            playerHand.result = 'blackjack';
-            payout = bet * 2.5;
-        } else if (dealerBusted) {
-            playerHand.result = 'win';
-            payout = bet * 2;
-        } else if (playerHand.value > dealerValue) {
-            playerHand.result = 'win';
-            payout = bet * 2;
-        } else if (playerHand.value < dealerValue) {
-            playerHand.result = 'lose';
-            payout = 0;
-        } else {
-            playerHand.result = 'push';
-            payout = bet;
-        }
+        // Process each hand (for splits, there will be multiple)
+        playerHandsArray.forEach(playerHand => {
+            const bet = playerHand.bet || 0;
+            let payout = 0;
 
-        // Update bankroll (bets already deducted when placed)
-        state.playerBankrolls[playerId] = (state.playerBankrolls[playerId] || 1000) + payout;
+            if (playerHand.result === 'surrendered') {
+                payout = bet * 0.5;
+            } else if (playerHand.isBusted) {
+                playerHand.result = 'lose';
+                payout = 0;
+            } else if (playerHand.isBlackjack && !state.dealerHand.isBlackjack) {
+                playerHand.result = 'blackjack';
+                payout = bet * 2.5;
+            } else if (dealerBusted) {
+                playerHand.result = 'win';
+                payout = bet * 2;
+            } else if (playerHand.value > dealerValue) {
+                playerHand.result = 'win';
+                payout = bet * 2;
+            } else if (playerHand.value < dealerValue) {
+                playerHand.result = 'lose';
+                payout = 0;
+            } else {
+                playerHand.result = 'push';
+                payout = bet;
+            }
+
+            totalPayout += payout;
+        });
+
+        // Update bankroll (bets already deducted when placed/split)
+        state.playerBankrolls[playerId] = (state.playerBankrolls[playerId] || 1000) + totalPayout;
     });
 }
 
@@ -661,64 +727,112 @@ function renderMultiplayerGame() {
     });
 
     RoomState.players.forEach(player => {
-        const handData = state.playerHands[player.id];
-        if (!handData) return;
+        const playerHandsArray = state.playerHands[player.id];
+        if (!playerHandsArray) return;
 
-        let handEl = document.getElementById(`mp-hand-${player.id}`);
-        const isCurrentTurn = state.currentPlayerId === player.id && state.phase === 'playing';
         const isYou = player.id === RoomState.playerId;
+        const currentHandIndex = state.currentHandIndex?.[player.id] || 0;
 
-        // Create container if not exists
-        if (!handEl) {
-            handEl = document.createElement('div');
-            handEl.id = `mp-hand-${player.id}`;
-            handEl.setAttribute('data-player-id', player.id);
-            handEl.className = `mp-player-hand`;
-            handEl.innerHTML = `
-                <div class="mp-player-name"></div>
-                <div class="mp-player-cards"></div>
-                <div class="mp-player-value"></div>
-                <div class="result-container"></div>
-                <div class="bankroll-container"></div>
-                <div class="turn-indicator-container"></div>
-            `;
-            handsContainer.appendChild(handEl);
-        }
+        // For EACH hand (supports splits)
+        playerHandsArray.forEach((handData, handIndex) => {
+            const handId = `mp-hand-${player.id}-${handIndex}`;
+            let handEl = document.getElementById(handId);
 
-        // Update classes
-        handEl.className = `mp-player-hand ${isCurrentTurn ? 'current-turn' : ''} ${isYou ? 'is-you' : ''}`;
+            const isCurrentTurn = state.currentPlayerId === player.id && state.phase === 'playing';
+            const isActiveHand = isCurrentTurn && currentHandIndex === handIndex;
 
-        // Update Text Info
-        handEl.querySelector('.mp-player-name').textContent = `${player.name} ${isYou ? '(You)' : ''}`;
-        handEl.querySelector('.mp-player-value').textContent = `${handData.value} ${handData.isSoft ? '(soft)' : ''}`;
+            // Create container if not exists
+            if (!handEl) {
+                handEl = document.createElement('div');
+                handEl.id = handId;
+                handEl.setAttribute('data-player-id', player.id);
+                handEl.setAttribute('data-hand-index', handIndex);
+                handEl.className = `mp-player-hand`;
+                handEl.innerHTML = `
+                    <div class="mp-player-name"></div>
+                    <div class="mp-player-cards"></div>
+                    <div class="mp-player-value"></div>
+                    <div class="result-container"></div>
+                    <div class="bankroll-container"></div>
+                    <div class="turn-indicator-container"></div>
+                `;
+                handsContainer.appendChild(handEl);
+            }
 
-        // Update Cards
-        const cardsEl = handEl.querySelector('.mp-player-cards');
-        updateCardsContainer(cardsEl, handData.cards);
+            // Update classes - highlight active hand
+            handEl.className = `mp-player-hand ${isActiveHand ? 'current-turn' : ''} ${isYou ? 'is-you' : ''}`;
 
-        // Update Result
-        const resultContainer = handEl.querySelector('.result-container');
-        if (handData.result) {
-            const resultClass = handData.result === 'win' || handData.result === 'blackjack' ? 'result-win' :
-                handData.result === 'lose' || handData.result === 'busted' ? 'result-lose' : 'result-push';
-            resultContainer.innerHTML = `<div class="mp-player-result ${resultClass}">${handData.result.toUpperCase()}</div>`;
-        } else {
-            resultContainer.innerHTML = '';
-        }
+            // Update Text Info
+            const handLabel = playerHandsArray.length > 1 ? ` [Hand ${handIndex + 1}]` : '';
+            handEl.querySelector('.mp-player-name').textContent = `${player.name}${handLabel} ${isYou ? '(You)' : ''}`;
+            handEl.querySelector('.mp-player-value').textContent = `${handData.value} ${handData.isSoft ? '(soft)' : ''}`;
 
-        // Update Bankroll & Turn
-        const bankrollDiv = handEl.querySelector('.bankroll-container');
-        bankrollDiv.innerHTML = (state.phase === 'playing' || state.phase === 'results') ?
-            `<div class="mp-player-bankroll">$${state.playerBankrolls[player.id]} (Bet: $${state.bets[player.id]})</div>` : '';
+            // Update Cards
+            const cardsEl = handEl.querySelector('.mp-player-cards');
+            updateCardsContainer(cardsEl, handData.cards);
 
-        const turnDiv = handEl.querySelector('.turn-indicator-container');
-        turnDiv.innerHTML = isCurrentTurn ? '<div class="turn-indicator">YOUR TURN</div>' : '';
+            // Update Result
+            const resultContainer = handEl.querySelector('.result-container');
+            if (handData.result) {
+                const resultClass = handData.result === 'win' || handData.result === 'blackjack' ? 'result-win' :
+                    handData.result === 'lose' || handData.result === 'busted' ? 'result-lose' : 'result-push';
+                resultContainer.innerHTML = `<div class="mp-player-result ${resultClass}">${handData.result.toUpperCase()}</div>`;
+            } else {
+                resultContainer.innerHTML = '';
+            }
+
+            // Update Bankroll & Turn
+            const bankrollDiv = handEl.querySelector('.bankroll-container');
+            // Show total bankroll only on first hand, show bet on all hands
+            if (handIndex === 0) {
+                bankrollDiv.innerHTML = (state.phase === 'playing' || state.phase === 'results') ?
+                    `<div class="mp-player-bankroll">$${state.playerBankrolls[player.id]} (Bet: $${handData.bet})</div>` : '';
+            } else {
+                bankrollDiv.innerHTML = (state.phase === 'playing' || state.phase === 'results') ?
+                    `<div class="mp-player-bankroll">(Bet: $${handData.bet})</div>` : '';
+            }
+
+            const turnDiv = handEl.querySelector('.turn-indicator-container');
+            turnDiv.innerHTML = isActiveHand ? '<div class="turn-indicator">YOUR TURN</div>' : '';
+        });
+
+        // Remove extra hand elements if player has fewer hands now (shouldn't happen but safety)
+        const existingHands = Array.from(handsContainer.querySelectorAll(`[data-player-id="${player.id}"]`));
+        existingHands.forEach((el, idx) => {
+            if (idx >= playerHandsArray.length) {
+                el.remove();
+            }
+        });
     });
 
     // Show/hide action buttons
     const actionButtons = document.getElementById('mp-action-buttons');
     if (state.currentPlayerId === RoomState.playerId && state.phase === 'playing') {
         actionButtons.style.display = 'flex';
+
+        // Enable/disable SPLIT button
+        const myHandsArray = state.playerHands[RoomState.playerId];
+        const myCurrentHandIndex = state.currentHandIndex[RoomState.playerId] || 0;
+        const myHand = myHandsArray[myCurrentHandIndex];
+        const splitBtn = document.getElementById('mp-btn-split');
+        const doubleBtn = document.getElementById('mp-btn-double');
+
+        if (splitBtn && myHand) {
+            // Can only split if: exactly 2 cards, same rank, and enough bankroll
+            const canSplit = myHand.cards.length === 2 &&
+                myHand.cards[0].rank === myHand.cards[1].rank &&
+                state.playerBankrolls[RoomState.playerId] >= myHand.bet;
+            splitBtn.disabled = !canSplit;
+            splitBtn.style.opacity = canSplit ? '1' : '0.5';
+        }
+
+        // Can only double on first action (2 cards)
+        if (doubleBtn && myHand) {
+            const canDouble = myHand.cards.length === 2 &&
+                state.playerBankrolls[RoomState.playerId] >= myHand.bet;
+            doubleBtn.disabled = !canDouble;
+            doubleBtn.style.opacity = canDouble ? '1' : '0.5';
+        }
     } else {
         actionButtons.style.display = 'none';
     }

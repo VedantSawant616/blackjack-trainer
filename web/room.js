@@ -559,14 +559,28 @@ function dealMultiplayerRound(state) {
 
 
 function handleGameStateUpdate(state) {
-    console.log('Received game state update', state);
+    console.log('=== GAME STATE UPDATE RECEIVED ===');
+    console.log('Phase:', state.phase);
+    console.log('Current screen:', document.querySelector('.screen.active')?.id);
+    console.log('Is Host:', RoomState.isHost);
+
     RoomState.gameState = state;
 
     if (state.phase === 'playing' || state.phase === 'betting') {
-        console.log('Switching to game screen for phase:', state.phase);
+        console.log('>>> ATTEMPTING SCREEN SWITCH TO multiplayer-game');
+        console.log('Before switch - active screen:', document.querySelector('.screen.active')?.id);
+
         showScreen('multiplayer-game');
+
+        console.log('After switch - active screen:', document.querySelector('.screen.active')?.id);
+        const gameScreen = document.getElementById('multiplayer-game');
+        console.log('Game screen display:', gameScreen?.style.display);
+        console.log('Game screen classList:', gameScreen?.classList.toString());
+    } else {
+        console.log('Phase is:', state.phase, '- not switching screen');
     }
 
+    console.log('=== RENDERING GAME ===');
     renderMultiplayerGame();
 }
 

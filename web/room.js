@@ -598,6 +598,11 @@ function renderMultiplayerGame() {
         RoomState.bankroll = myBankroll; // Sync local bankroll
         document.getElementById('mp-my-bankroll').textContent = myBankroll;
 
+        // Reset current bet if starting new round (haven't bet yet)
+        if (myBet === 0) {
+            RoomState.currentBet = 0;
+        }
+
         if (myBet > 0) {
             // Already bet, waiting for others
             bettingArea.style.display = 'none';

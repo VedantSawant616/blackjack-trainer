@@ -419,7 +419,7 @@ function handleGameStateUpdate(state) {
     console.log('Received game state update', state);
     RoomState.gameState = state;
 
-    if (state.phase === 'playing') {
+    if (state.phase === 'playing' || state.phase === 'betting') {
         showScreen('multiplayer-game');
     }
 

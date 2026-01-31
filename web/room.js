@@ -63,6 +63,8 @@ const RoomState = {
 // ============================================================================
 
 function initSupabase() {
+    if (supabaseClient) return true;
+
     if (SUPABASE_URL === 'YOUR_SUPABASE_URL') {
         console.warn('Supabase not configured. Running in offline mode.');
         return false;
@@ -420,6 +422,7 @@ function handleGameStateUpdate(state) {
     RoomState.gameState = state;
 
     if (state.phase === 'playing' || state.phase === 'betting') {
+        console.log('Switching to game screen for phase:', state.phase);
         showScreen('multiplayer-game');
     }
 

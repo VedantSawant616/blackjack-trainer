@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blackjack for Boys</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+
+<body>
+    <!-- Main App Container -->
+    <div id="app">
+        <!-- Header -->
+        <header class="header">
+            <h1 class="logo">♠ Blackjack For The Boys</h1>
+            <div class="header-stats">
+                <div class="stat-item">
+                    <span class="stat-label">Session</span>
+                    <span class="stat-value" id="session-hands">0</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Accuracy</span>
+                    <span class="stat-value" id="session-accuracy">--%</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Streak</span>
+                    <span class="stat-value" id="current-streak">0</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- Mode Selection Screen -->
+        <div id="mode-select" class="screen active">
+            <div class="mode-container">
+                <h2 class="mode-title">Select Training Mode</h2>
+                <div class="mode-cards">
+                    <div class="mode-card" onclick="startMode('counting')">
+                        <div class="mode-icon">
+                            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                                <rect x="3" y="2" width="14" height="20" rx="2" />
+                                <text x="10" y="14" font-size="8" font-weight="bold" fill="currentColor" stroke="none"
+                                    text-anchor="middle">♠</text>
+                            </svg>
+                        </div>
+                        <h3>Counting Drill</h3>
+                        <p>Practice tracking the running count as cards are revealed</p>
+                    </div>
+                    <div class="mode-card" onclick="startMode('fullplay')">
+                        <div class="mode-icon">
+                            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                                <rect x="2" y="4" width="12" height="16" rx="2" transform="rotate(-10 8 12)" />
+                                <rect x="8" y="3" width="12" height="16" rx="2" transform="rotate(5 14 11)" />
+                            </svg>
+                        </div>
+                        <h3>Full Play</h3>
+                        <p>Complete blackjack hands with strategy & count verification</p>
+                    </div>
+                    <div class="mode-card" onclick="startMode('strategy')">
+                        <div class="mode-icon">
+                            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                                <rect x="4" y="14" width="4" height="6" rx="1" />
+                                <rect x="10" y="10" width="4" height="10" rx="1" />
+                                <rect x="16" y="6" width="4" height="14" rx="1" />
+                            </svg>
+                        </div>
+                        <h3>Strategy Drill</h3>
+                        <p>Practice basic strategy decisions without counting</p>
+                    </div>
+                    <div class="mode-card" onclick="startMode('classic')">
+                        <div class="mode-icon">
+                            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                                <rect x="2" y="6" width="20" height="14" rx="2" />
+                                <ellipse cx="12" cy="13" rx="6" ry="4" />
+                            </svg>
+                        </div>
+                        <h3>Classic Blackjack</h3>
+                        <p>Play regular blackjack without counting or strategy hints</p>
+                    </div>
+                </div>
+                <div class="settings-bar">
+                    <button class="settings-btn" onclick="toggleSettings()">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                            style="vertical-align: middle; margin-right: 6px;">
+                            <circle cx="12" cy="12" r="3" />
+                            <path
+                                d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
+                        </svg>
+                        Settings
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Settings Panel -->
+        <div id="settings-panel" class="settings-panel">
+            <div class="settings-content">
+                <h3>Settings</h3>
+                <div class="setting-row">
+                    <label>Dealer Rule</label>
+                    <select id="dealer-rule">
+                        <option value="h17">H17 (Hit Soft 17)</option>
+                        <option value="s17">S17 (Stand Soft 17)</option>
+                    </select>
+                </div>
+                <div class="setting-row">
+                    <label>Penetration</label>
+                    <select id="penetration">
+                        <option value="0.5">50%</option>
+                        <option value="0.65" selected>65%</option>
+                        <option value="0.75">75%</option>
+                        <option value="0.85">85%</option>
+                    </select>
+                </div>
+                <div class="setting-row">
+                    <label>Cards Per Drill</label>
+                    <select id="cards-per-drill">
+                        <option value="1">1 Card</option>
+                        <option value="2">2 Cards</option>
+                        <option value="3" selected>3 Cards</option>
+                        <option value="5">5 Cards</option>
+                    </select>
+                </div>
+                <div class="setting-row">
+                    <label>Speed</label>
+                    <select id="drill-speed">
+                        <option value="slow">Slow</option>
+                        <option value="normal" selected>Normal</option>
+                        <option value="fast">Fast</option>
+                    </select>
+                </div>
+                <button class="btn btn-primary" onclick="toggleSettings()">Save & Close</button>
+            </div>
+        </div>
+
+        <!-- Counting Drill Screen -->
+        <div id="counting-drill" class="screen">
+            <div class="table-container">
+                <div class="felt">
+                    <!-- Penetration Indicator -->
+                    <div class="penetration-bar">
+                        <div class="penetration-fill" id="pen-fill"></div>
+                        <span class="penetration-text" id="pen-text">52 cards</span>
+                    </div>
+
+                    <!-- Card Display Area -->
+                    <div class="card-display-area">
+                        <div class="cards-row" id="drill-cards">
+                            <!-- Cards will be inserted here -->
+                        </div>
+                    </div>
+
+                    <!-- Count Input Area -->
+                    <div class="count-input-area">
+                        <div class="count-prompt" id="count-prompt">What is the Running Count?</div>
+                        <div class="count-buttons">
+                            <button class="count-btn minus" onclick="adjustCount(-1)">−</button>
+                            <div class="count-display" id="user-count">0</div>
+                            <button class="count-btn plus" onclick="adjustCount(1)">+</button>
+                        </div>
+                        <button class="btn btn-primary btn-large" id="submit-count"
+                            onclick="submitCount()">Submit</button>
+                    </div>
+
+                    <!-- Feedback Area -->
+                    <div class="feedback-area" id="feedback-area">
+                        <div class="feedback-icon" id="feedback-icon"></div>
+                        <div class="feedback-text" id="feedback-text"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Control Bar -->
+            <div class="control-bar">
+                <button class="btn btn-secondary" onclick="backToMenu()">← Menu</button>
+                <button class="btn btn-primary" id="next-drill" onclick="nextDrill()">Deal Cards</button>
+                <div class="drill-stats">
+                    <span>RC: <strong id="actual-rc">0</strong></span>
+                    <span>TC: <strong id="actual-tc">0.0</strong></span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Full Play Screen -->
+        <div id="full-play" class="screen">
+            <div class="table-container">
+                <div class="felt">
+                    <!-- Dealer Section -->
+                    <div class="dealer-section">
+                        <div class="dealer-label">DEALER</div>
+                        <div class="cards-row" id="dealer-cards">
+                            <!-- Dealer cards -->
+                        </div>
+                        <div class="hand-value" id="dealer-value"></div>
+                    </div>
+
+                    <!-- Center Info -->
+                    <div class="game-info">
+                        <div class="info-chip" id="game-status">Place Your Bet</div>
+                    </div>
+
+                    <!-- Player Section -->
+                    <div class="player-section">
+                        <div class="cards-row" id="player-cards">
+                            <!-- Player cards -->
+                        </div>
+                        <div class="hand-value" id="player-value"></div>
+
+                        <!-- Action Buttons -->
+                        <div class="action-buttons" id="action-buttons">
+                            <button class="action-btn hit" onclick="playerAction('hit')">HIT</button>
+                            <button class="action-btn stand" onclick="playerAction('stand')">STAND</button>
+                            <button class="action-btn double" onclick="playerAction('double')">DOUBLE</button>
+                            <button class="action-btn split" onclick="playerAction('split')">SPLIT</button>
+                            <button class="action-btn surrender" onclick="playerAction('surrender')">SURRENDER</button>
+                        </div>
+                    </div>
+
+                    <!-- Betting Area -->
+                    <div class="betting-area" id="betting-area">
+                        <div class="chip-stack">
+                            <div class="chip chip-5" onclick="addBet(5)">5</div>
+                            <div class="chip chip-25" onclick="addBet(25)">25</div>
+                            <div class="chip chip-100" onclick="addBet(100)">100</div>
+                        </div>
+                        <div class="current-bet">
+                            <span>Bet: $</span><span id="current-bet-amount">0</span>
+                        </div>
+                        <button class="btn btn-primary" id="deal-btn" onclick="dealHand()">DEAL</button>
+                    </div>
+
+                    <!-- Bankroll -->
+                    <div class="bankroll">
+                        <span>Bankroll: $</span><span id="bankroll">1000</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Count Check Modal -->
+            <div class="count-check-modal" id="count-check-modal">
+                <div class="modal-content">
+                    <h3>What's the Running Count?</h3>
+                    <div class="count-buttons">
+                        <button class="count-btn minus" onclick="adjustModalCount(-1)">−</button>
+                        <div class="count-display" id="modal-count">0</div>
+                        <button class="count-btn plus" onclick="adjustModalCount(1)">+</button>
+                    </div>
+                    <button class="btn btn-primary" onclick="submitModalCount()">Submit</button>
+                </div>
+            </div>
+
+            <!-- Control Bar -->
+            <div class="control-bar">
+                <button class="btn btn-secondary" onclick="backToMenu()">← Menu</button>
+                <button class="btn btn-outline" onclick="showCount()">Show Count</button>
+                <div class="count-display-bar" id="count-display-bar">
+                    <span>RC: <strong id="play-rc">?</strong></span>
+                    <span>TC: <strong id="play-tc">?</strong></span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Strategy Drill Screen -->
+        <div id="strategy-drill" class="screen">
+            <div class="table-container">
+                <div class="felt">
+                    <div class="strategy-layout">
+                        <!-- Dealer Card -->
+                        <div class="strategy-dealer">
+                            <div class="dealer-label">DEALER SHOWS</div>
+                            <div class="cards-row" id="strat-dealer-card"></div>
+                        </div>
+
+                        <!-- Your Hand -->
+                        <div class="strategy-player">
+                            <div class="player-label">YOUR HAND</div>
+                            <div class="cards-row" id="strat-player-cards"></div>
+                            <div class="hand-value" id="strat-hand-value"></div>
+                        </div>
+
+                        <!-- Decision Buttons -->
+                        <div class="strategy-actions">
+                            <button class="action-btn hit" onclick="strategyAction('hit')">HIT</button>
+                            <button class="action-btn stand" onclick="strategyAction('stand')">STAND</button>
+                            <button class="action-btn double" onclick="strategyAction('double')">DOUBLE</button>
+                            <button class="action-btn split" onclick="strategyAction('split')">SPLIT</button>
+                            <button class="action-btn surrender"
+                                onclick="strategyAction('surrender')">SURRENDER</button>
+                        </div>
+
+                        <!-- Feedback -->
+                        <div class="strategy-feedback" id="strategy-feedback"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="control-bar">
+                <button class="btn btn-secondary" onclick="backToMenu()">← Menu</button>
+                <button class="btn btn-primary" id="next-strat" onclick="nextStrategyHand()">Next Hand</button>
+            </div>
+        </div>
+
+        <!-- Classic Blackjack Screen -->
+        <div id="classic-play" class="screen">
+            <div class="table-container">
+                <div class="felt">
+                    <!-- Dealer Section -->
+                    <div class="dealer-section">
+                        <div class="dealer-label">DEALER</div>
+                        <div class="cards-row" id="classic-dealer-cards">
+                            <!-- Dealer cards -->
+                        </div>
+                        <div class="hand-value" id="classic-dealer-value"></div>
+                    </div>
+
+                    <!-- Center Info -->
+                    <div class="game-info">
+                        <div class="info-chip" id="classic-game-status">Place Your Bet</div>
+                    </div>
+
+                    <!-- Player Section -->
+                    <div class="player-section">
+                        <div class="cards-row" id="classic-player-cards">
+                            <!-- Player cards -->
+                        </div>
+                        <div class="hand-value" id="classic-player-value"></div>
+
+                        <!-- Action Buttons -->
+                        <div class="action-buttons" id="classic-action-buttons">
+                            <button class="action-btn hit" onclick="classicPlayerAction('hit')">HIT</button>
+                            <button class="action-btn stand" onclick="classicPlayerAction('stand')">STAND</button>
+                            <button class="action-btn double" onclick="classicPlayerAction('double')">DOUBLE</button>
+                            <button class="action-btn split" onclick="classicPlayerAction('split')">SPLIT</button>
+                            <button class="action-btn surrender"
+                                onclick="classicPlayerAction('surrender')">SURRENDER</button>
+                        </div>
+                    </div>
+
+                    <!-- Betting Area -->
+                    <div class="betting-area" id="classic-betting-area">
+                        <div class="chip-stack">
+                            <div class="chip chip-5" onclick="classicAddBet(5)">5</div>
+                            <div class="chip chip-25" onclick="classicAddBet(25)">25</div>
+                            <div class="chip chip-100" onclick="classicAddBet(100)">100</div>
+                        </div>
+                        <div class="current-bet">
+                            <span>Bet: $</span><span id="classic-bet-amount">0</span>
+                        </div>
+                        <button class="btn btn-primary" id="classic-deal-btn" onclick="classicDealHand()">DEAL</button>
+                    </div>
+
+                    <!-- Bankroll -->
+                    <div class="bankroll">
+                        <span>Bankroll: $</span><span id="classic-bankroll">1000</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Control Bar -->
+            <div class="control-bar">
+                <button class="btn btn-secondary" onclick="backToMenu()">← Menu</button>
+            </div>
+        </div>
+
+        <!-- Result Toast -->
+        <div class="toast" id="toast">
+            <span class="toast-icon"></span>
+            <span class="toast-message"></span>
+        </div>
+    </div>
+
+    <script src="cards.js"></script>
+    <script src="game.js"></script>
+    <script src="ui.js"></script>
+</body>
+
+</html>

@@ -571,7 +571,11 @@ function renderMultiplayerGame() {
     // Update status
     const statusEl = document.getElementById('mp-game-status');
     if (state.phase === 'results') {
-        statusEl.textContent = 'Round Complete!';
+        if (RoomState.isHost) {
+            statusEl.innerHTML = 'Round Complete! <button class="btn btn-primary btn-small" onclick="startMultiplayerGame()" style="margin-left:10px; padding: 2px 8px; font-size: 0.8rem;">Next Deal</button>';
+        } else {
+            statusEl.textContent = 'Round Complete! Waiting for host...';
+        }
     } else if (state.phase === 'dealer') {
         statusEl.textContent = 'Dealer\'s Turn';
     } else {
@@ -580,7 +584,11 @@ function renderMultiplayerGame() {
     }
 
     // Update turn indicator
-    document.getElementById('mp-turn-indicator').textContent = isYourTurn ? 'Your Turn!' : 'Waiting...';
+    if (state.phase === 'results') {
+        document.getElementById('mp-turn-indicator').textContent = 'Round Over';
+    } else {
+        document.getElementById('mp-turn-indicator').textContent = isYourTurn ? 'Your Turn!' : 'Waiting...';
+    }
 }
 
 async function mpPlayerAction(action) {

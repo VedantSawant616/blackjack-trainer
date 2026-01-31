@@ -160,7 +160,8 @@ async function subscribeToRoom(roomCode) {
 
     roomChannel = supabaseClient.channel(`room:${roomCode}`, {
         config: {
-            presence: { key: RoomState.playerId }
+            presence: { key: RoomState.playerId },
+            broadcast: { self: true }
         }
     });
 

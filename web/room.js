@@ -1016,6 +1016,82 @@ function updateCardsContainer(container, cardsData) {
     }
 }
 
+// ============================================================================
+// SWIPE GESTURE SUPPORT (MOBILE)
+// ============================================================================
+
+let touchStartX = 0;
+let touchStartY = 0;
+let touchEndX = 0;
+let touchEndY = 0;
+
+function setupSwipeGestures() {
+    const gameArea = document.getElementById('multiplayer-game');
+    if (!gameArea) return;
+
+    gameArea.addEventListener('touchstart', (e) => {
+        touchStartX = e.changedTouches[0].screenX;
+        touchStartY = e.changedTouches[0].screenY;
+    }, { passive: true });
+
+    gameArea.addEventListener('touchend', (e) => {
+        touchEndX = e.changedTouches[0].screenX;
+        touchEndY = e.changedTouches[0].screenY;
+        handleSwipe();
+    }, { passive: true });
+}
+
+function handleSwipe() {
+    const state = RoomState.gameState;
+
+    // Only allow swipes during your turn
+    if (!state || state.currentPlayerId !== RoomState.playerId || state.phase !== 'playing') {
+        return;
+    }
+
+    const deltaX = touchEndX - touchStartX;
+    const deltaY = touchEndY - touchStartY;
+    const minSwipeDistance = 50;
+
+    // Determine if horizontal or vertical swipe
+    if (Math.abs(deltaX) > Math.abs(deltaY)) {
+        // Horizontal swipe
+        if (Math.abs(deltaX) > minSwipeDistance) {
+            if (deltaX > 0) {
+                // Swipe right = HIT
+                console.log('Swipe gesture: HIT');
+                showToast('👉', 'Hit!');
+                mpPlayerAction('hit');
+            } else {
+                // Swipe left = STAND
+                console.log('Swipe gesture: STAND');
+                showToast('👈', 'Stand!');
+                mpPlayerAction('stand');
+            }
+        }
+    } else {
+        // Vertical swipe
+        if (Math.abs(deltaY) > minSwipeDistance && deltaY < 0) {
+            // Swipe up = DOUBLE
+            const myHandsArray = state.playerHands[RoomState.playerId];
+            const myCurrentHandIndex = state.currentHandIndex[RoomState.playerId] || 0;
+            const myHand = myHandsArray[myCurrentHandIndex];
+
+            // Check if double is allowed
+            if (myHand && myHand.cards.length === 2 && state.playerBankrolls[RoomState.playerId] >= myHand.bet) {
+                console.log('Swipe gesture: DOUBLE');
+                showToast('👆', 'Double Down!');
+                mpPlayerAction('double');
+            }
+        }
+    }
+}
+
+// Initialize swipe gestures when page loads
+if (typeof window !== 'undefined') {
+    window.addEventListener('DOMContentLoaded', setupSwipeGestures);
+}
+
 window.createRoom = createRoom;
 window.joinRoom = joinRoom;
 window.toggleReady = toggleReady;

@@ -564,6 +564,11 @@ function handleGameStateUpdate(state) {
     console.log('Current screen:', document.querySelector('.screen.active')?.id);
     console.log('Is Host:', RoomState.isHost);
 
+    // Visual feedback for debugging on mobile
+    if (!RoomState.isHost) {
+        showToast('📡', `Game state received: ${state.phase}`);
+    }
+
     RoomState.gameState = state;
 
     if (state.phase === 'playing' || state.phase === 'betting') {
@@ -576,6 +581,11 @@ function handleGameStateUpdate(state) {
         const gameScreen = document.getElementById('multiplayer-game');
         console.log('Game screen display:', gameScreen?.style.display);
         console.log('Game screen classList:', gameScreen?.classList.toString());
+
+        // Extra toast for non-hosts
+        if (!RoomState.isHost) {
+            showToast('🎮', 'Switching to game screen...');
+        }
     } else {
         console.log('Phase is:', state.phase, '- not switching screen');
     }

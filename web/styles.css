@@ -791,8 +791,18 @@ body {
     color: white;
 }
 
+.chip-10 {
+    background: linear-gradient(180deg, #007bff 0%, #0056b3 100%);
+    color: white;
+}
+
 .chip-25 {
     background: linear-gradient(180deg, #28a745 0%, #1e7e34 100%);
+    color: white;
+}
+
+.chip-50 {
+    background: linear-gradient(180deg, #fd7e14 0%, #d35400 100%);
     color: white;
 }
 

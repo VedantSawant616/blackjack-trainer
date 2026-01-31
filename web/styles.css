@@ -124,7 +124,7 @@ body {
 
 .mode-cards {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
     gap: 1.5rem;
     margin-bottom: 2rem;
 }
@@ -976,5 +976,292 @@ body {
     .control-bar {
         flex-wrap: wrap;
         gap: 0.5rem;
+    }
+}
+
+/* ========================================
+   Multiplayer Room Styles
+   ======================================== */
+
+.room-container,
+.lobby-container {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 2rem;
+    text-align: center;
+}
+
+.room-options {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 2rem;
+    margin-top: 2rem;
+}
+
+.room-option-card {
+    background: linear-gradient(145deg, rgba(40, 45, 55, 0.9), rgba(25, 28, 35, 0.95));
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 2rem;
+    text-align: center;
+}
+
+.room-option-card h3 {
+    color: var(--gold);
+    margin-bottom: 0.5rem;
+    font-size: 1.4rem;
+}
+
+.room-option-card p {
+    color: var(--text-muted);
+    margin-bottom: 1.5rem;
+    font-size: 0.9rem;
+}
+
+.room-input {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    font-size: 1rem;
+    margin-bottom: 1rem;
+    text-align: center;
+}
+
+.room-input:focus {
+    outline: none;
+    border-color: var(--gold);
+}
+
+.room-code-input {
+    font-family: 'Courier New', monospace;
+    font-size: 1.5rem;
+    letter-spacing: 0.3rem;
+    text-transform: uppercase;
+}
+
+/* Lobby Styles */
+.room-code-display {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    margin-bottom: 2rem;
+    padding: 1rem;
+    background: rgba(212, 175, 55, 0.1);
+    border: 1px solid var(--gold);
+    border-radius: 12px;
+}
+
+.room-code-value {
+    font-family: 'Courier New', monospace;
+    font-size: 2rem;
+    color: var(--gold);
+    letter-spacing: 0.5rem;
+    font-weight: bold;
+}
+
+.btn-outline {
+    background: transparent;
+    border: 1px solid var(--gold);
+    color: var(--gold);
+}
+
+.btn-outline:hover {
+    background: rgba(212, 175, 55, 0.1);
+}
+
+.btn-small {
+    padding: 0.4rem 0.8rem;
+    font-size: 0.8rem;
+}
+
+.players-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    margin: 2rem 0;
+    max-width: 400px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.player-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 1.5rem;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    transition: all 0.3s ease;
+}
+
+.player-item.ready {
+    border-color: var(--green);
+    background: rgba(46, 204, 113, 0.1);
+}
+
+.player-item.is-you {
+    border-color: var(--gold);
+}
+
+.player-name {
+    font-weight: 500;
+    color: var(--text);
+}
+
+.player-status {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+}
+
+.player-item.ready .player-status {
+    color: var(--green);
+}
+
+.lobby-actions {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+    margin-top: 1.5rem;
+}
+
+.ready-active {
+    background: var(--green) !important;
+    border-color: var(--green) !important;
+    color: white !important;
+}
+
+/* Multiplayer mode card highlight */
+.multiplayer-card {
+    background: linear-gradient(145deg, rgba(212, 175, 55, 0.15), rgba(40, 45, 55, 0.9)) !important;
+    border-color: var(--gold) !important;
+}
+
+/* Multiplayer Game Styles */
+.multiplayer-hands {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 1.5rem;
+    padding: 1rem;
+    margin-top: 1rem;
+}
+
+.mp-player-hand {
+    background: rgba(0, 0, 0, 0.3);
+    border: 2px solid var(--border);
+    border-radius: 12px;
+    padding: 1rem;
+    min-width: 180px;
+    text-align: center;
+    transition: all 0.3s ease;
+}
+
+.mp-player-hand.current-turn {
+    border-color: var(--gold);
+    box-shadow: 0 0 20px rgba(212, 175, 55, 0.4);
+}
+
+.mp-player-hand.is-you {
+    border-color: #4a9eff;
+}
+
+.mp-player-name {
+    color: var(--text);
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    font-size: 0.9rem;
+}
+
+.mp-player-cards {
+    display: flex;
+    justify-content: center;
+    gap: -20px;
+    margin: 0.5rem 0;
+}
+
+.mp-player-cards .card {
+    width: 50px;
+    height: 70px;
+    font-size: 0.8rem;
+    margin-left: -15px;
+}
+
+.mp-player-cards .card:first-child {
+    margin-left: 0;
+}
+
+.mp-player-value {
+    color: var(--gold);
+    font-weight: bold;
+    font-size: 1.1rem;
+}
+
+.mp-player-result {
+    margin-top: 0.5rem;
+    padding: 0.3rem 0.6rem;
+    border-radius: 6px;
+    font-weight: bold;
+    font-size: 0.8rem;
+}
+
+.result-win {
+    background: rgba(46, 204, 113, 0.2);
+    color: var(--green);
+}
+
+.result-lose {
+    background: rgba(231, 76, 60, 0.2);
+    color: var(--red);
+}
+
+.result-push {
+    background: rgba(212, 175, 55, 0.2);
+    color: var(--gold);
+}
+
+.turn-indicator {
+    margin-top: 0.5rem;
+    color: var(--gold);
+    font-weight: bold;
+    font-size: 0.75rem;
+    animation: pulse 1s infinite;
+}
+
+@keyframes pulse {
+
+    0%,
+    100% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0.5;
+    }
+}
+
+#mp-turn-indicator {
+    font-weight: bold;
+    color: var(--gold);
+}
+
+/* Responsive adjustments */
+@media (max-width: 600px) {
+    .room-options {
+        grid-template-columns: 1fr;
+    }
+
+    .multiplayer-hands {
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .mp-player-hand {
+        width: 100%;
+        max-width: 250px;
     }
 }

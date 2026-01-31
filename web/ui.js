@@ -126,11 +126,8 @@ function startMode(mode) {
             nextStrategyHand();
             break;
         case 'classic':
-            console.log('Starting classic mode...');
             showScreen('classic-play');
-            console.log('Screen shown, calling resetClassicPlayUI...');
             resetClassicPlayUI();
-            console.log('Classic mode initialized');
             break;
     }
 }
@@ -723,6 +720,10 @@ function classicDealHand() {
 
     // Deal cards
     classicState.playerHand = new Hand();
+    classicState.playerHand.bet = classicState.currentBet; // Track bet per hand
+    classicState.playerHands = [classicState.playerHand];  // Initialize array
+    classicState.activeHandIndex = 0;
+
     classicState.dealerHand = new Hand();
 
     classicState.playerHand.addCard(classicState.shoe.deal());
@@ -731,7 +732,7 @@ function classicDealHand() {
     classicState.dealerHand.addCard(classicState.shoe.deal());
 
     // Render hands
-    classicState.playerHand.render(elements.classicPlayerCards);
+    renderClassicHands(); // Use universal renderer
     classicState.dealerHand.render(elements.classicDealerCards, true);
 
     elements.classicPlayerValue.textContent = classicState.playerHand.value;
@@ -739,7 +740,8 @@ function classicDealHand() {
 
     // Hide betting, show actions
     elements.classicBettingArea.style.display = 'none';
-    elements.classicActionButtons.style.display = 'flex';
+    elements.classicActionButtons.style.display = 'block'; // Block ensures full width container
+    elements.classicActionButtons.querySelector('.control-bar').style.display = 'flex'; // Ensure flex layout
     elements.classicGameStatus.textContent = 'Your Turn';
 
     classicUpdateActionButtons();
@@ -758,42 +760,83 @@ function classicDealHand() {
 }
 
 function classicUpdateActionButtons() {
-    const hand = classicState.playerHand;
+    // Determine which hand is active
+    const activeHandIndex = classicState.activeHandIndex || 0;
+    const hands = classicState.playerHands || [classicState.playerHand];
+    const hand = hands[activeHandIndex];
+
+    // Safety check
+    if (!hand) return;
+
     const btns = elements.classicActionButtons.querySelectorAll('button');
 
     btns.forEach(btn => {
         const action = btn.className.split(' ')[1];
         switch (action) {
             case 'double':
+                // Can only double on first two cards
                 btn.disabled = !hand.canDouble || classicState.bankroll < classicState.currentBet;
                 break;
             case 'split':
-                btn.disabled = !hand.canSplit || classicState.bankroll < classicState.currentBet;
+                // Can only split on first action if pair
+                // Limit to one split for now (max 2 hands)
+                btn.disabled = !hand.canSplit || classicState.bankroll < classicState.currentBet || hands.length > 1;
                 break;
             case 'surrender':
-                btn.disabled = !hand.canSurrender;
+                // Can only surrender on first action of first hand
+                btn.disabled = !hand.canSurrender || hands.length > 1;
                 break;
             default:
                 btn.disabled = false;
         }
     });
+
+    // Highlight active hand in UI if split
+    if (hands.length > 1) {
+        document.querySelectorAll('.classic-hand-container').forEach((el, index) => {
+            if (index === activeHandIndex) {
+                el.classList.add('active-hand');
+                el.style.border = '2px solid var(--gold)';
+                el.style.boxShadow = '0 0 10px rgba(212, 175, 55, 0.3)';
+            } else {
+                el.classList.remove('active-hand');
+                el.style.border = '2px solid transparent';
+                el.style.boxShadow = 'none';
+            }
+        });
+    }
 }
 
 function classicPlayerAction(action) {
-    const hand = classicState.playerHand;
+    // Initialize hands array if not present
+    if (!classicState.playerHands) {
+        classicState.playerHands = [classicState.playerHand];
+        classicState.activeHandIndex = 0;
+    }
+
+    const activeHandIndex = classicState.activeHandIndex;
+    const hand = classicState.playerHands[activeHandIndex];
 
     switch (action) {
         case 'hit':
             const card = classicState.shoe.deal();
             hand.addCard(card);
-            classicState.playerHand.render(elements.classicPlayerCards);
-            elements.classicPlayerValue.textContent = hand.value;
+
+            // Re-render specifically this hand
+            renderClassicHands();
 
             if (hand.isBusted) {
-                classicState.dealerHand.render(elements.classicDealerCards);
-                elements.classicDealerValue.textContent = classicState.dealerHand.value;
-                classicEndHand('lose', 'Bust!');
+                if (activeHandIndex < classicState.playerHands.length - 1) {
+                    // Move to next hand
+                    classicState.activeHandIndex++;
+                    classicUpdateActionButtons();
+                    renderClassicHands();
+                } else {
+                    // All hands done
+                    classicDealerPlay();
+                }
             } else if (hand.value === 21) {
+                // Auto-stand on 21
                 classicPlayerAction('stand');
             } else {
                 classicUpdateActionButtons();
@@ -802,52 +845,172 @@ function classicPlayerAction(action) {
 
         case 'stand':
             hand.isStood = true;
-            classicState.dealerHand.render(elements.classicDealerCards);
-            elements.classicDealerValue.textContent = classicState.dealerHand.value;
-            classicDealerPlay();
-            classicState.dealerHand.render(elements.classicDealerCards);
-            elements.classicDealerValue.textContent = classicState.dealerHand.value;
-
-            const result = classicDetermineWinner();
-            classicEndHand(result.result, classicGetResultMessage(result.result));
+            if (activeHandIndex < classicState.playerHands.length - 1) {
+                // Move to next hand
+                classicState.activeHandIndex++;
+                classicUpdateActionButtons();
+                renderClassicHands();
+            } else {
+                // All hands done
+                classicDealerPlay();
+            }
             break;
 
         case 'double':
-            classicState.bankroll -= classicState.currentBet;
-            classicState.currentBet *= 2;
+            classicState.bankroll -= hand.bet;
+            classicState.totalBet = (classicState.totalBet || 0) + hand.bet;
             elements.classicBankroll.textContent = classicState.bankroll;
-            hand.isDoubled = true;
 
+            hand.bet *= 2;
+            hand.isDoubled = true;
             const dCard = classicState.shoe.deal();
             hand.addCard(dCard);
-            classicState.playerHand.render(elements.classicPlayerCards);
-            elements.classicPlayerValue.textContent = hand.value;
+
+            renderClassicHands();
 
             if (hand.isBusted) {
-                classicState.dealerHand.render(elements.classicDealerCards);
-                elements.classicDealerValue.textContent = classicState.dealerHand.value;
-                classicEndHand('lose', 'Bust!');
+                if (activeHandIndex < classicState.playerHands.length - 1) {
+                    classicState.activeHandIndex++;
+                    classicUpdateActionButtons();
+                    renderClassicHands();
+                } else {
+                    classicDealerPlay();
+                }
             } else {
-                classicPlayerAction('stand');
+                // Move to next hand or dealer
+                if (activeHandIndex < classicState.playerHands.length - 1) {
+                    classicState.activeHandIndex++;
+                    classicUpdateActionButtons();
+                    renderClassicHands();
+                } else {
+                    classicDealerPlay();
+                }
             }
             break;
 
         case 'split':
-            showToast('i', 'Split not fully implemented');
+            // 1. Deduct extra bet
+            classicState.bankroll -= hand.bet;
+            classicState.totalBet = (classicState.totalBet || 0) + hand.bet;
+            elements.classicBankroll.textContent = classicState.bankroll;
+
+            // 2. Create second hand
+            const splitCard = hand.cards.pop(); // Remove 2nd card from 1st hand
+            const hand2 = new Hand();
+            hand2.bet = hand.bet;
+            hand2.addCard(splitCard);
+
+            hand.isSplit = true;
+            hand2.isSplit = true;
+
+            // 3. Deal 2nd card to each hand
+            hand.addCard(classicState.shoe.deal());
+            hand2.addCard(classicState.shoe.deal());
+
+            // 4. Update State
+            classicState.playerHands = [hand, hand2];
+            classicState.activeHandIndex = 0; // Start with first hand
+
+            // 5. Render
+            renderClassicHands();
+            classicUpdateActionButtons();
             break;
 
         case 'surrender':
             hand.isSurrendered = true;
-            classicState.dealerHand.render(elements.classicDealerCards);
-            elements.classicDealerValue.textContent = classicState.dealerHand.value;
-            classicEndHand('surrender', 'Surrendered');
+            // Only end if it's the only hand, otherwise treated as "done" with "surrender" result
+            // But usually surrender is only allowed on first 2 cards of initial hand.
+            if (activeHandIndex < classicState.playerHands.length - 1) {
+                classicState.activeHandIndex++;
+                classicUpdateActionButtons();
+                renderClassicHands();
+            } else {
+                classicDealerPlay();
+            }
             break;
     }
+}
+
+function renderClassicHands() {
+    const container = elements.classicPlayerCards;
+    container.innerHTML = '';
+
+    // Style container for multiple hands
+    container.style.display = 'flex';
+    container.style.gap = '2rem';
+    container.style.justifyContent = 'center';
+    container.style.alignItems = 'flex-start';
+
+    const hands = classicState.playerHands || [classicState.playerHand];
+
+    hands.forEach((hand, index) => {
+        const handDiv = document.createElement('div');
+        handDiv.className = 'classic-hand-container';
+        handDiv.style.position = 'relative';
+        handDiv.style.padding = '15px';
+        handDiv.style.borderRadius = '12px';
+        handDiv.style.minWidth = '140px';
+        handDiv.style.textAlign = 'center';
+        handDiv.style.transition = 'all 0.3s ease';
+
+        // Highlight active hand
+        if (hands.length > 1 && index === classicState.activeHandIndex) {
+            handDiv.classList.add('active-hand');
+            handDiv.style.border = '2px solid var(--gold)';
+            handDiv.style.boxShadow = '0 0 20px rgba(212, 175, 55, 0.4)';
+            handDiv.style.backgroundColor = 'rgba(212, 175, 55, 0.1)';
+        } else if (hands.length > 1) {
+            handDiv.style.border = '2px solid transparent';
+            handDiv.style.opacity = '0.8';
+        }
+
+        // Render Cards
+        const cardContainer = document.createElement('div');
+        cardContainer.className = 'cards-row';
+        cardContainer.style.marginBottom = '10px';
+        cardContainer.style.display = 'flex';
+        cardContainer.style.justifyContent = 'center';
+
+        hand.cards.forEach(card => {
+            const cardEl = card.toElement();
+            if (hands.length > 1) {
+                cardEl.style.width = '60px'; // Slightly smaller cards for split
+                cardEl.style.height = '84px';
+                cardEl.style.fontSize = '0.9rem';
+            }
+            cardContainer.appendChild(cardEl);
+        });
+        handDiv.appendChild(cardContainer);
+
+        // Render Value
+        const valueDiv = document.createElement('div');
+        valueDiv.className = 'hand-value';
+        valueDiv.textContent = hand.value + (hand.isSoft ? ' (soft)' : '');
+        valueDiv.style.color = index === classicState.activeHandIndex ? 'var(--gold)' : '#fff';
+        valueDiv.style.fontWeight = 'bold';
+        handDiv.appendChild(valueDiv);
+
+        // Bet indicator
+        const betDiv = document.createElement('div');
+        betDiv.textContent = `$${hand.bet}`;
+        betDiv.style.fontSize = '0.9rem';
+        betDiv.style.marginTop = '5px';
+        betDiv.style.color = 'var(--text-muted)';
+        handDiv.appendChild(betDiv);
+
+        container.appendChild(handDiv);
+    });
 }
 
 function classicDealerPlay() {
     const dealerHand = classicState.dealerHand;
     const dealerRule = GameState.settings.dealerRule || 'h17';
+
+    // Reveal
+    elements.classicDealerCards.innerHTML = '';
+    dealerHand.cards.forEach(card => {
+        elements.classicDealerCards.appendChild(card.toElement());
+    });
 
     while (true) {
         const value = dealerHand.value;
@@ -855,50 +1018,95 @@ function classicDealerPlay() {
 
         if (value > 17) break;
         if (value === 17 && !isSoft17) break;
-        if (value === 17 && isSoft17 && dealerRule === 's17') break;
+        if (value === 17 && isSoft17 && dealerRule === 's17') break; // Stand on soft 17
 
         dealerHand.addCard(classicState.shoe.deal());
     }
+
+    // Final render
+    elements.classicDealerCards.innerHTML = '';
+    dealerHand.cards.forEach(card => {
+        elements.classicDealerCards.appendChild(card.toElement());
+    });
+    elements.classicDealerValue.textContent = dealerHand.value;
+
+    classicEndHand();
 }
 
-function classicDetermineWinner() {
-    const player = classicState.playerHand;
-    const dealer = classicState.dealerHand;
-    const bet = classicState.currentBet;
-
-    if (player.isSurrendered) return { result: 'surrender', payout: bet / 2 };
-    if (player.isBusted) return { result: 'lose', payout: 0 };
-    if (player.isBlackjack && !dealer.isBlackjack) return { result: 'blackjack', payout: bet * 2.5 };
-    if (dealer.isBusted) return { result: 'win', payout: bet * 2 };
-    if (player.value > dealer.value) return { result: 'win', payout: bet * 2 };
-    if (player.value < dealer.value) return { result: 'lose', payout: 0 };
-    return { result: 'push', payout: bet };
-}
-
-function classicGetResultMessage(result) {
-    const messages = {
-        'win': 'You Win!',
-        'lose': 'Dealer Wins',
-        'push': 'Push',
-        'blackjack': 'BLACKJACK!',
-        'surrender': 'Surrendered'
-    };
-    return messages[result] || result;
-}
-
-function classicEndHand(result, message) {
+function classicEndHand(forceResult, forceMessage) {
     elements.classicActionButtons.style.display = 'none';
-    elements.classicGameStatus.textContent = message;
 
-    const outcome = classicDetermineWinner();
-    classicState.bankroll += outcome.payout;
+    const dealerHand = classicState.dealerHand;
+    const hands = classicState.playerHands || [classicState.playerHand];
+
+    let totalWin = 0;
+    let anyWin = false;
+    let summary = '';
+
+    hands.forEach((hand, i) => {
+        let result = '';
+        let payout = 0;
+
+        if (hand.isSurrendered) {
+            result = 'surrender';
+            payout = hand.bet * 0.5;
+        } else if (hand.isBusted) {
+            result = 'lose';
+            payout = 0;
+        } else {
+            // Dealer busted or player higher
+            if (dealerHand.isBusted || hand.value > dealerHand.value) {
+                result = 'win';
+                if (hand.isBlackjack && !dealerHand.isBlackjack) {
+                    payout = hand.bet + (hand.bet * 1.5);
+                    result = 'blackjack';
+                } else {
+                    payout = hand.bet * 2;
+                }
+            } else if (hand.value < dealerHand.value) {
+                result = 'lose';
+                payout = 0;
+            } else {
+                result = 'push';
+                payout = hand.bet;
+            }
+        }
+
+        if (payout > 0) anyWin = true;
+        totalWin += payout; // This payout includes the original bet returned
+
+        if (hands.length > 1) {
+            const resShort = result === 'blackjack' ? 'BJ' : result.toUpperCase();
+            summary += `H${i + 1}: ${resShort} `;
+        } else {
+            summary = forceMessage || (result === 'blackjack' ? 'BLACKJACK!' :
+                result === 'win' ? 'YOU WIN!' :
+                    result === 'push' ? 'PUSH' :
+                        result === 'surrender' ? 'SURRENDERED' : 'DEALER WINS');
+        }
+
+        // Update visual result on hand (add result class to hand div if needed in future)
+    });
+
+    // Determine net profit/loss for bankroll update
+    // We already deducted bets from bankroll. So totalWin is what we add back.
+    classicState.bankroll += totalWin;
     elements.classicBankroll.textContent = classicState.bankroll;
+
+    // Calculate net for message
+    const totalBet = hands.reduce((sum, h) => sum + h.bet, 0);
+    const net = totalWin - totalBet;
+
+    let resultColor = net > 0 ? 'green' : (net < 0 ? 'red' : 'gold');
 
     // Show continue button
     elements.classicBettingArea.style.display = 'flex';
     elements.classicBettingArea.innerHTML = `
-        <div class="current-bet" style="font-size: 1.5rem; color: var(--${result === 'win' || result === 'blackjack' ? 'green' : result === 'lose' ? 'red' : 'gold'});">
-            ${message}
+        <div class="current-bet" style="font-size: 1.5rem; color: var(--${resultColor});">
+            ${summary}
+        </div>
+        <div style="font-size: 1rem; color: #aaa; margin-bottom: 1rem;">
+            ${net > 0 ? `Won $${net}` : (net < 0 ? `Lost $${Math.abs(net)}` : 'Push')}
         </div>
         <button class="btn btn-primary" onclick="resetClassicPlayUI()">Next Hand</button>
     `;
@@ -923,3 +1131,5 @@ window.classicAddBet = classicAddBet;
 window.classicDealHand = classicDealHand;
 window.classicPlayerAction = classicPlayerAction;
 window.resetClassicPlayUI = resetClassicPlayUI;
+window.showScreen = showScreen;
+window.showToast = showToast;

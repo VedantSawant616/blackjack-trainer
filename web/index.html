@@ -82,6 +82,19 @@
                         <h3>Classic Blackjack</h3>
                         <p>Play regular blackjack without counting or strategy hints</p>
                     </div>
+                    <div class="mode-card multiplayer-card" onclick="showScreen('room-select')">
+                        <div class="mode-icon">
+                            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                                <circle cx="9" cy="7" r="4" />
+                                <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+                                <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                            </svg>
+                        </div>
+                        <h3>Multiplayer</h3>
+                        <p>Play with friends! Create or join a room (2-6 players)</p>
+                    </div>
                 </div>
                 <div class="settings-bar">
                     <button class="settings-btn" onclick="toggleSettings()">
@@ -375,9 +388,111 @@
         </div>
     </div>
 
+    <!-- Room Selection Screen -->
+    <div id="room-select" class="screen">
+        <div class="room-container">
+            <h2 class="mode-title">Multiplayer</h2>
+
+            <div class="room-options">
+                <!-- Create Room -->
+                <div class="room-option-card">
+                    <h3>Create Room</h3>
+                    <p>Start a new game and invite friends</p>
+                    <input type="text" id="player-name-create" placeholder="Your Name" maxlength="15"
+                        class="room-input">
+                    <button class="btn btn-primary" onclick="createRoom()">Create Room</button>
+                </div>
+
+                <!-- Join Room -->
+                <div class="room-option-card">
+                    <h3>Join Room</h3>
+                    <p>Enter a room code to join</p>
+                    <input type="text" id="player-name-join" placeholder="Your Name" maxlength="15" class="room-input">
+                    <input type="text" id="room-code-input" placeholder="Room Code" maxlength="6"
+                        class="room-input room-code-input">
+                    <button class="btn btn-primary" onclick="joinRoom()">Join Room</button>
+                </div>
+            </div>
+
+            <button class="btn btn-secondary" onclick="backToMenu()" style="margin-top: 2rem;">← Back to Menu</button>
+        </div>
+    </div>
+
+    <!-- Room Lobby Screen -->
+    <div id="room-lobby" class="screen">
+        <div class="lobby-container">
+            <div class="room-code-display">
+                <span>Room Code:</span>
+                <span id="lobby-room-code" class="room-code-value">------</span>
+                <button class="btn btn-outline btn-small" onclick="copyRoomCode()">Copy</button>
+            </div>
+
+            <h2>Waiting for Players...</h2>
+
+            <div class="players-list" id="players-list">
+                <!-- Players will be inserted here -->
+            </div>
+
+            <div class="lobby-actions">
+                <button class="btn btn-outline" id="ready-btn" onclick="toggleReady()">Ready</button>
+                <button class="btn btn-primary" id="start-game-btn" onclick="startMultiplayerGame()" disabled>Start
+                    Game</button>
+            </div>
+
+            <button class="btn btn-secondary" onclick="leaveRoom()" style="margin-top: 1rem;">Leave Room</button>
+        </div>
+    </div>
+
+    <!-- Multiplayer Game Screen -->
+    <div id="multiplayer-game" class="screen">
+        <div class="table-container">
+            <div class="felt">
+                <!-- Dealer Section -->
+                <div class="dealer-section">
+                    <div class="dealer-label">DEALER</div>
+                    <div class="cards-row" id="mp-dealer-cards"></div>
+                    <div class="hand-value" id="mp-dealer-value"></div>
+                </div>
+
+                <!-- Game Status -->
+                <div class="game-info">
+                    <div class="info-chip" id="mp-game-status">Waiting for players...</div>
+                </div>
+
+                <!-- All Players Hands -->
+                <div class="multiplayer-hands" id="mp-players-hands">
+                    <!-- Player hands will be inserted here -->
+                </div>
+
+                <!-- Your Actions (shown when it's your turn) -->
+                <div class="action-buttons" id="mp-action-buttons" style="display: none;">
+                    <button class="action-btn hit" onclick="mpPlayerAction('hit')">HIT</button>
+                    <button class="action-btn stand" onclick="mpPlayerAction('stand')">STAND</button>
+                    <button class="action-btn double" onclick="mpPlayerAction('double')">DOUBLE</button>
+                    <button class="action-btn surrender" onclick="mpPlayerAction('surrender')">SURRENDER</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Control Bar -->
+        <div class="control-bar">
+            <button class="btn btn-secondary" onclick="leaveRoom()">← Leave Game</button>
+            <div id="mp-turn-indicator">Waiting...</div>
+        </div>
+    </div>
+
+    <!-- Result Toast -->
+    <div class="toast" id="toast">
+        <span class="toast-icon"></span>
+        <span class="toast-message"></span>
+    </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="cards.js"></script>
     <script src="game.js"></script>
     <script src="ui.js"></script>
+    <script src="room.js"></script>
 </body>
 
 </html>

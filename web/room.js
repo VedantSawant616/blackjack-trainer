@@ -129,7 +129,12 @@ async function attemptReconnect() {
                 showToast('✓', 'Reconnected successfully!');
             }
         } catch (error) {
-            console.error('Reconnection failed:', error);
+            // Check if it's a room not found error
+            if (error.message && error.message.includes('not found')) {
+                handleError(error, 'room_not_found');
+            } else {
+                handleError(error, 'connection');
+            }
             attemptReconnect(); // Try again
         }
     }, delay);
@@ -146,6 +151,64 @@ function updateConnectionStatus(isConnected, customMessage = null) {
         statusEl.textContent = customMessage || '● Disconnected';
         statusEl.className = 'connection-status disconnected';
     }
+}
+
+// ============================================================================
+// GRACEFUL ERROR HANDLING
+// ============================================================================
+
+function handleError(error, context = 'general') {
+    console.error(`Error in ${context}:`, error);
+
+    const errorMessages = {
+        'connection': {
+            title: 'Connection Issue',
+            message: 'Unable to connect to the game server. Please check your internet connection and try again.',
+            action: 'Retry'
+        },
+        'room_full': {
+            title: 'Room Full',
+            message: 'This room has reached its player limit. Please try joining a different room.',
+            action: null
+        },
+        'room_not_found': {
+            title: 'Room Not Found',
+            message: 'This room code doesn\'t exist. Please double-check the code or create a new room.',
+            action: null
+        },
+        'invalid_action': {
+            title: 'Invalid Action',
+            message: 'That action isn\'t available right now. Please wait for your turn.',
+            action: null
+        },
+        'insufficient_funds': {
+            title: 'Insufficient Funds',
+            message: 'You don\'t have enough chips for this action. Try a smaller bet.',
+            action: null
+        },
+        'network': {
+            title: 'Network Error',
+            message: 'Lost connection to server. We\'ll try to reconnect automatically.',
+            action: null
+        },
+        'general': {
+            title: 'Something Went Wrong',
+            message: 'An unexpected error occurred. Please refresh the page and try again.',
+            action: 'Refresh'
+        }
+    };
+
+    const errorInfo = errorMessages[context] || errorMessages['general'];
+
+    // Show user-friendly error
+    showToast('⚠️', `${errorInfo.title}: ${errorInfo.message}`);
+
+    // Log for debugging
+    if (error && error.message) {
+        console.error('Error details:', error.message);
+    }
+
+    return errorInfo;
 }
 
 console.log('room.js loaded successfully');

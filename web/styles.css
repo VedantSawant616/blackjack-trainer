@@ -1383,3 +1383,22 @@ body {
         transform: rotateY(0);
     }
 }
+
+/* Connection status indicator */
+.connection-status {
+    font-size: 0.75rem;
+    padding: 4px 8px;
+    border-radius: 4px;
+    display: inline-block;
+    margin-left: 10px;
+}
+
+.connection-status.connected {
+    color: var(--green);
+    background: rgba(46, 204, 113, 0.1);
+}
+
+.connection-status.disconnected {
+    color: var(--red);
+    background: rgba(231, 76, 60, 0.1);
+}

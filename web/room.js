@@ -55,6 +55,9 @@ const RoomState = {
         this.gameState = null;
         this.bankroll = 1000;
         this.currentBet = 0;
+        this.isConnected = false;
+        this.reconnectAttempts = 0;
+        this.maxReconnectAttempts = 5;
     }
 };
 
@@ -67,18 +70,82 @@ function initSupabase() {
 
     if (SUPABASE_URL === 'YOUR_SUPABASE_URL') {
         console.warn('Supabase not configured. Running in offline mode.');
+        updateConnectionStatus(false);
         return false;
     }
 
     // Check if Supabase SDK is loaded
     if (!window.supabase || !window.supabase.createClient) {
         console.warn('Supabase SDK not loaded. Running in offline mode.');
+        updateConnectionStatus(false);
         return false;
     }
 
     supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
     console.log('Supabase initialized');
+    RoomState.isConnected = true;
+    RoomState.reconnectAttempts = 0;
+    updateConnectionStatus(true);
+
+    // Monitor connection status
+    setupConnectionMonitoring();
+
     return true;
+}
+
+function setupConnectionMonitoring() {
+    // Listen for connectivity changes
+    window.addEventListener('online', () => {
+        console.log('Network online - attempting reconnect');
+        attemptReconnect();
+    });
+
+    window.addEventListener('offline', () => {
+        console.log('Network offline');
+        RoomState.isConnected = false;
+        updateConnectionStatus(false);
+    });
+}
+
+async function attemptReconnect() {
+    if (RoomState.isConnected || RoomState.reconnectAttempts >= RoomState.maxReconnectAttempts) {
+        return;
+    }
+
+    RoomState.reconnectAttempts++;
+    const delay = Math.min(1000 * Math.pow(2, RoomState.reconnectAttempts - 1), 30000); // Max 30s
+
+    console.log(`Reconnect attempt ${RoomState.reconnectAttempts}/${RoomState.maxReconnectAttempts} in ${delay}ms`);
+    updateConnectionStatus(false, `Reconnecting... (${RoomState.reconnectAttempts}/${RoomState.maxReconnectAttempts})`);
+
+    setTimeout(async () => {
+        try {
+            // Try to re-subscribe to channels
+            if (RoomState.roomCode && roomChannel) {
+                await roomChannel.subscribe();
+                RoomState.isConnected = true;
+                RoomState.reconnectAttempts = 0;
+                updateConnectionStatus(true);
+                showToast('✓', 'Reconnected successfully!');
+            }
+        } catch (error) {
+            console.error('Reconnection failed:', error);
+            attemptReconnect(); // Try again
+        }
+    }, delay);
+}
+
+function updateConnectionStatus(isConnected, customMessage = null) {
+    const statusEl = document.getElementById('connection-status');
+    if (!statusEl) return;
+
+    if (isConnected) {
+        statusEl.textContent = '● Connected';
+        statusEl.className = 'connection-status connected';
+    } else {
+        statusEl.textContent = customMessage || '● Disconnected';
+        statusEl.className = 'connection-status disconnected';
+    }
 }
 
 console.log('room.js loaded successfully');

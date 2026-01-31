@@ -248,43 +248,48 @@ async function createRoom() {
 }
 
 async function joinRoom() {
-    const nameInput = document.getElementById('player-name-join');
-    const codeInput = document.getElementById('room-code-input');
+    try {
+        const nameInput = document.getElementById('player-name-join');
+        const codeInput = document.getElementById('room-code-input');
 
-    const playerName = nameInput.value.trim();
-    const roomCode = codeInput.value.trim().toUpperCase();
+        const playerName = nameInput.value.trim();
+        const roomCode = codeInput.value.trim().toUpperCase();
 
-    if (!playerName) {
-        showToast('!', 'Please enter your name');
-        return;
+        if (!playerName) {
+            showToast('!', 'Please enter your name');
+            return;
+        }
+
+        if (!roomCode || roomCode.length !== 6) {
+            showToast('!', 'Please enter a valid 6-character room code');
+            return;
+        }
+
+        RoomState.playerName = playerName;
+        RoomState.roomCode = roomCode;
+        RoomState.isHost = false;
+
+        // Try to connect to Supabase
+        if (initSupabase() && supabaseClient) {
+            await subscribeToRoom(roomCode);
+            await broadcastPlayerJoin();
+        } else {
+            // Offline mode - simulate joining
+            RoomState.players = [{
+                id: RoomState.playerId,
+                name: playerName,
+                isHost: false,
+                isReady: false,
+                hand: null,
+                status: 'waiting'
+            }];
+        }
+
+        showLobby();
+    } catch (error) {
+        console.error('Join room error:', error);
+        handleError(error, 'connection');
     }
-
-    if (!roomCode || roomCode.length !== 6) {
-        showToast('!', 'Please enter a valid 6-character room code');
-        return;
-    }
-
-    RoomState.playerName = playerName;
-    RoomState.roomCode = roomCode;
-    RoomState.isHost = false;
-
-    // Try to connect to Supabase
-    if (initSupabase() && supabaseClient) {
-        await subscribeToRoom(roomCode);
-        await broadcastPlayerJoin();
-    } else {
-        // Offline mode - simulate joining
-        RoomState.players = [{
-            id: RoomState.playerId,
-            name: playerName,
-            isHost: false,
-            isReady: false,
-            hand: null,
-            status: 'waiting'
-        }];
-    }
-
-    showLobby();
 }
 
 // ============================================================================

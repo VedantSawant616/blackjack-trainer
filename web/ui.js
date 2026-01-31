@@ -98,8 +98,21 @@ let currentDealerCard = null;
 // ============================================================================
 
 function showScreen(screenId) {
-    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-    document.getElementById(screenId).classList.add('active');
+    // Hide all screens
+    document.querySelectorAll('.screen').forEach(s => {
+        s.classList.remove('active');
+        s.style.display = 'none'; // Explicit for mobile
+    });
+
+    // Show target screen
+    const targetScreen = document.getElementById(screenId);
+    if (targetScreen) {
+        targetScreen.classList.add('active');
+        targetScreen.style.display = 'block'; // Explicit for mobile
+        console.log('Switched to screen:', screenId); // Debug log
+    } else {
+        console.error('Screen not found:', screenId);
+    }
 }
 
 function startMode(mode) {

@@ -440,6 +440,7 @@ function handlePlayerAction({ playerId, action, data }) {
     if (action === 'bet') {
         if (state.phase !== 'betting') return;
         state.bets[playerId] = data.amount;
+        state.playerBankrolls[playerId] = (state.playerBankrolls[playerId] || 1000) - data.amount;
 
         const allBet = RoomState.players.every(p => state.bets[p.id] > 0);
         if (allBet) {
@@ -477,7 +478,9 @@ function handlePlayerAction({ playerId, action, data }) {
 
         case 'double':
             // Double the bet
-            state.bets[playerId] = (state.bets[playerId] || 0) * 2;
+            const originalBet = state.bets[playerId] || 0;
+            state.bets[playerId] = originalBet * 2;
+            state.playerBankrolls[playerId] -= originalBet;
 
             const dCard = state.shoeCards.pop();
             playerHand.cards.push(dCard);
@@ -572,10 +575,8 @@ function determineResults(state) {
             payout = bet;
         }
 
-        // Update bankroll (bankrolls already had bets not deducted?? No, we didn't deduct yet)
-        // Let's assume bankrolls in state are 'start of round'. 
-        // So we subtract bet and add payout.
-        state.playerBankrolls[playerId] = (state.playerBankrolls[playerId] || 1000) - bet + payout;
+        // Update bankroll (bets already deducted when placed)
+        state.playerBankrolls[playerId] = (state.playerBankrolls[playerId] || 1000) + payout;
     });
 }
 

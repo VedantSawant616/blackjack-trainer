@@ -584,12 +584,12 @@ function determineResults(state) {
 // MULTIPLAYER UI RENDERING
 // ============================================================================
 
+
 function renderMultiplayerGame() {
     const state = RoomState.gameState;
     if (!state) return;
 
-    // BETTING UI
-    // BETTING UI
+    // --- 1. BETTING UI ---
     const bettingArea = document.getElementById('mp-betting-area');
     const myBet = state.bets[RoomState.playerId] || 0;
 
@@ -613,73 +613,110 @@ function renderMultiplayerGame() {
             const betCount = Object.values(state.bets).filter(b => b > 0).length;
             statusEl.textContent = `Betting Phase: ${betCount}/${RoomState.players.length} players ready`;
         }
-        return; // Don't render hands yet
+
+        // Ensure hands are cleared during betting
+        document.getElementById('mp-dealer-cards').innerHTML = '';
+        document.getElementById('mp-players-hands').innerHTML = '';
+        return;
     } else {
         bettingArea.style.display = 'none';
 
-        // Update local bankroll from state result
+        // Update local bankroll
         if (state.phase === 'results') {
             RoomState.bankroll = state.playerBankrolls[RoomState.playerId];
             document.getElementById('mp-my-bankroll').textContent = RoomState.bankroll;
-            updatePresence(); // Sync to lobby
+            updatePresence();
         } else {
-            // Update bankroll display during other phases too
             document.getElementById('mp-my-bankroll').textContent = state.playerBankrolls[RoomState.playerId];
         }
     }
 
-    // Render dealer
+    // --- 2. SMART RENDER DEALER ---
     const dealerContainer = document.getElementById('mp-dealer-cards');
-    dealerContainer.innerHTML = '';
-    state.dealerHand.cards.forEach((cardData, i) => {
-        const card = new Card(cardData.rank, cardData.suit);
-        const hideHole = !state.dealerHand.showHoleCard && i === 1;
-        dealerContainer.appendChild(card.toElement(hideHole));
-    });
+    const dealerCardsData = state.dealerHand.cards.map((c, i) => ({
+        ...c,
+        hide: !state.dealerHand.showHoleCard && i === 1
+    }));
+
+    updateCardsContainer(dealerContainer, dealerCardsData);
 
     document.getElementById('mp-dealer-value').textContent =
-        state.dealerHand.showHoleCard ? state.dealerHand.value : state.dealerHand.cards[0] ? new Card(state.dealerHand.cards[0].rank, state.dealerHand.cards[0].suit).value : '';
+        state.dealerHand.showHoleCard ? state.dealerHand.value :
+            (state.dealerHand.cards[0] ? new Card(state.dealerHand.cards[0].rank, state.dealerHand.cards[0].suit).value : '');
 
-    // Render all player hands
+    // --- 3. SMART RENDER PLAYERS ---
     const handsContainer = document.getElementById('mp-players-hands');
-    handsContainer.innerHTML = '';
+
+    // Remove hands of players who left
+    Array.from(handsContainer.children).forEach(child => {
+        const pid = child.getAttribute('data-player-id');
+        if (!RoomState.players.find(p => p.id === pid)) {
+            child.remove();
+        }
+    });
 
     RoomState.players.forEach(player => {
         const handData = state.playerHands[player.id];
         if (!handData) return;
 
+        let handEl = document.getElementById(`mp-hand-${player.id}`);
         const isCurrentTurn = state.currentPlayerId === player.id && state.phase === 'playing';
         const isYou = player.id === RoomState.playerId;
 
-        const handEl = document.createElement('div');
-        handEl.className = `mp-player-hand ${isCurrentTurn ? 'current-turn' : ''} ${isYou ? 'is-you' : ''}`;
-
-        const cardsHtml = handData.cards.map(c => {
-            const card = new Card(c.rank, c.suit);
-            return card.toElement().outerHTML;
-        }).join('');
-
-        let resultClass = '';
-        if (handData.result) {
-            resultClass = handData.result === 'win' || handData.result === 'blackjack' ? 'result-win' :
-                handData.result === 'lose' || handData.result === 'busted' ? 'result-lose' : 'result-push';
+        // Create container if not exists
+        if (!handEl) {
+            handEl = document.createElement('div');
+            handEl.id = `mp-hand-${player.id}`;
+            handEl.setAttribute('data-player-id', player.id);
+            handEl.className = `mp-player-hand`;
+            handEl.innerHTML = `
+                <div class="mp-player-name"></div>
+                <div class="mp-player-cards"></div>
+                <div class="mp-player-value"></div>
+                <div class="result-container"></div>
+                <div class="bankroll-container"></div>
+                <div class="turn-indicator-container"></div>
+            `;
+            handsContainer.appendChild(handEl);
         }
 
-        handEl.innerHTML = `
-            <div class="mp-player-name">${player.name} ${isYou ? '(You)' : ''}</div>
-            <div class="mp-player-cards">${cardsHtml}</div>
-            <div class="mp-player-value">${handData.value} ${handData.isSoft ? '(soft)' : ''}</div>
-            ${handData.result ? `<div class="mp-player-result ${resultClass}">${handData.result.toUpperCase()}</div>` : ''}
-            ${state.phase === 'playing' || state.phase === 'results' ? `<div class="mp-player-bankroll">$${state.playerBankrolls[player.id]} (Bet: $${state.bets[player.id]})</div>` : ''}
-            ${isCurrentTurn ? '<div class="turn-indicator">YOUR TURN</div>' : ''}
-        `;
+        // Update classes
+        handEl.className = `mp-player-hand ${isCurrentTurn ? 'current-turn' : ''} ${isYou ? 'is-you' : ''}`;
 
-        handsContainer.appendChild(handEl);
+        // Update Text Info
+        handEl.querySelector('.mp-player-name').textContent = `${player.name} ${isYou ? '(You)' : ''}`;
+        handEl.querySelector('.mp-player-value').textContent = `${handData.value} ${handData.isSoft ? '(soft)' : ''}`;
+
+        // Update Cards
+        const cardsEl = handEl.querySelector('.mp-player-cards');
+        updateCardsContainer(cardsEl, handData.cards);
+
+        // Update Result
+        const resultContainer = handEl.querySelector('.result-container');
+        if (handData.result) {
+            const resultClass = handData.result === 'win' || handData.result === 'blackjack' ? 'result-win' :
+                handData.result === 'lose' || handData.result === 'busted' ? 'result-lose' : 'result-push';
+            resultContainer.innerHTML = `<div class="mp-player-result ${resultClass}">${handData.result.toUpperCase()}</div>`;
+        } else {
+            resultContainer.innerHTML = '';
+        }
+
+        // Update Bankroll & Turn
+        const bankrollDiv = handEl.querySelector('.bankroll-container');
+        bankrollDiv.innerHTML = (state.phase === 'playing' || state.phase === 'results') ?
+            `<div class="mp-player-bankroll">$${state.playerBankrolls[player.id]} (Bet: $${state.bets[player.id]})</div>` : '';
+
+        const turnDiv = handEl.querySelector('.turn-indicator-container');
+        turnDiv.innerHTML = isCurrentTurn ? '<div class="turn-indicator">YOUR TURN</div>' : '';
     });
 
     // Show/hide action buttons
-    const isYourTurn = state.currentPlayerId === RoomState.playerId && state.phase === 'playing';
-    document.getElementById('mp-action-buttons').style.display = isYourTurn ? 'flex' : 'none';
+    const actionButtons = document.getElementById('mp-action-buttons');
+    if (state.currentPlayerId === RoomState.playerId && state.phase === 'playing') {
+        actionButtons.style.display = 'flex';
+    } else {
+        actionButtons.style.display = 'none';
+    }
 
     // Update status
     const statusEl = document.getElementById('mp-game-status');
@@ -743,19 +780,54 @@ async function mpConfirmBet() {
         showToast('!', 'Place a bet first');
         return;
     }
-
-    // Disable buttons
-    // document.querySelector('#mp-betting-overlay .action-buttons').style.display = 'none'; // REMOVED
     showToast('✓', 'Bet Placed. Waiting for others...');
-
     await broadcastAction('bet', { amount: RoomState.currentBet });
 
-    // If we're not connected to Supabase, handle locally
+    // If not connected, handle immediately (offline testing)
     if (!roomChannel) {
         handlePlayerAction({ playerId: RoomState.playerId, action: 'bet', data: { amount: RoomState.currentBet } });
     }
+}
 
-    // Host will process logic
+/**
+ * Helper to update card containers intelligently
+ */
+function updateCardsContainer(container, cardsData) {
+    const currentCount = container.children.length;
+    const targetCount = cardsData.length;
+
+    // Remove excess (should rarely happen in BJ, mainly for new rounds)
+    if (currentCount > targetCount) {
+        container.innerHTML = '';
+    }
+
+    // Append new cards
+    for (let i = currentCount; i < targetCount; i++) {
+        const c = cardsData[i];
+        const cardObj = new Card(c.rank, c.suit);
+        const el = cardObj.toElement(c.hide);
+
+        // Add staggering delay
+        // We use a global counter or relative index to stagger
+        el.style.animationDelay = `${(i * 0.2)}s`;
+
+        container.appendChild(el);
+    }
+
+    // Update existing cards (e.g. flip hole card)
+    for (let i = 0; i < currentCount; i++) {
+        const c = cardsData[i];
+        const el = container.children[i];
+
+        // Check if card needs to flip (was down, now up)
+        if (el.classList.contains('face-down') && !c.hide) {
+            // Replace the face-down card with the actual card
+            const cardObj = new Card(c.rank, c.suit);
+            const newEl = cardObj.toElement(false);
+            newEl.style.animation = 'flipReveal 0.6s ease';
+            container.replaceChild(newEl, el);
+        }
+    }
 }
 
 window.createRoom = createRoom;

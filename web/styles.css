@@ -1372,3 +1372,14 @@ body {
     color: var(--gold);
     margin-top: 5px;
 }
+
+/* Card flip animation for hole card reveal */
+@keyframes flipReveal {
+    from {
+        transform: rotateY(180deg);
+    }
+
+    to {
+        transform: rotateY(0);
+    }
+}

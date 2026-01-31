@@ -1,0 +1,149 @@
+/* ========================================
+   Mobile Responsiveness Improvements
+   ======================================== */
+
+@media (max-width: 768px) {
+    /* Header adjustments */
+    .header {
+        padding: 0.75rem 1rem;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .header-stats {
+        gap: 1rem;
+        width: 100%;
+        justify-content: space-around;
+    }
+
+    .logo {
+        font-size: 1.25rem;
+    }
+
+    /* Table container */
+    .table-container {
+        padding: 0.5rem;
+        min-height: calc(100vh - 140px);
+    }
+
+    .felt {
+        padding: 1rem 0.5rem;
+        border-width: 4px;
+        min-height: 400px;
+    }
+
+    /* Card adjustments */
+    .card {
+        width: 60px;
+        height: 84px;
+        border-radius: 6px;
+    }
+
+    .card-rank {
+        font-size: 0.9rem;
+    }
+
+    .card-suit {
+        font-size: 0.8rem;
+    }
+
+    .card-center {
+        font-size: 1.5rem;
+    }
+    
+    .card.face-down::after {
+        font-size: 1.5rem;
+    }
+
+    .cards-row {
+        gap: 0.25rem;
+        min-height: 100px;
+    }
+
+    /* Hand values and labels */
+    .hand-value {
+        font-size: 1rem;
+        padding: 0.25rem 0.75rem;
+    }
+
+    .dealer-label, .player-label {
+        font-size: 0.75rem;
+    }
+
+    /* Action buttons */
+    .action-buttons {
+        gap: 0.5rem;
+    }
+
+    .action-btn {
+        padding: 0.75rem 0.5rem;
+        min-width: 70px;
+        font-size: 0.75rem;
+        flex: 1;
+    }
+
+    /* Betting area */
+    .betting-area {
+        flex-direction: column;
+        gap: 1rem;
+        padding: 1rem 0.5rem;
+    }
+
+    .chip-stack {
+        gap: 0.5rem;
+    }
+
+    .chip {
+        width: 45px;
+        height: 45px;
+        font-size: 0.8rem;
+        border-width: 3px;
+    }
+    
+    /* Multiplayer adjustments */
+    .multiplayer-hands {
+        gap: 1rem;
+        padding: 0.5rem;
+    }
+    
+    .mp-player-hand {
+        min-width: 140px;
+        padding: 0.75rem;
+    }
+    
+    .mp-player-cards .card {
+        width: 40px;
+        height: 56px;
+        margin-left: -20px;
+    }
+    
+    .mp-player-cards .card:first-child {
+        margin-left: 0;
+    }
+
+    /* Betting overlay mobile */
+    .betting-overlay h2 {
+        font-size: 1.75rem;
+    }
+    
+    .chip-container .chip {
+        width: 55px;
+        height: 55px;
+    }
+}
+
+/* Extra small screens */
+@media (max-width: 380px) {
+    .mp-player-hand {
+        width: 100%;
+        max-width: 100%;
+    }
+    
+    .action-buttons {
+        flex-wrap: wrap;
+    }
+    
+    .action-btn {
+        min-width: 45%;
+    }
+}

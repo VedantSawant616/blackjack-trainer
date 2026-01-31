@@ -108,23 +108,6 @@ function startMode(mode) {
     loadSettings();
 
     switch (mode) {
-        case 'counting':
-            showScreen('counting-drill');
-            updatePenetrationBar();
-            updateDrillStats();
-            elements.drillCards.innerHTML = '<p style="color: var(--gold);">Press "Deal Cards" to start</p>';
-            elements.feedbackArea.classList.remove('show');
-            break;
-        case 'fullplay':
-            showScreen('full-play');
-            resetFullPlayUI();
-            break;
-        case 'strategy':
-            showScreen('strategy-drill');
-            elements.strategyFeedback.className = 'strategy-feedback';
-            elements.strategyFeedback.textContent = '';
-            nextStrategyHand();
-            break;
         case 'classic':
             showScreen('classic-play');
             resetClassicPlayUI();
@@ -146,21 +129,18 @@ function toggleSettings() {
 }
 
 function loadSettings() {
-    GameState.settings.dealerRule = elements.dealerRule.value;
-    GameState.settings.penetration = parseFloat(elements.penetration.value);
-    GameState.settings.cardsPerDrill = parseInt(elements.cardsPerDrill.value);
-    GameState.settings.speed = elements.drillSpeed.value;
-
+    // Settings UI removed, using defaults
     if (GameState.shoe) {
         GameState.shoe.penetration = GameState.settings.penetration;
     }
 }
 
 // Add event listeners for settings changes
-elements.dealerRule.addEventListener('change', loadSettings);
-elements.penetration.addEventListener('change', loadSettings);
-elements.cardsPerDrill.addEventListener('change', loadSettings);
-elements.drillSpeed.addEventListener('change', loadSettings);
+// Settings listeners removed
+// elements.dealerRule.addEventListener('change', loadSettings);
+// elements.penetration.addEventListener('change', loadSettings);
+// elements.cardsPerDrill.addEventListener('change', loadSettings);
+// elements.drillSpeed.addEventListener('change', loadSettings);
 
 // ============================================================================
 // COUNTING DRILL
@@ -610,40 +590,19 @@ function showToast(icon, message) {
 // KEYBOARD SHORTCUTS
 // ============================================================================
 
-document.addEventListener('keydown', (e) => {
-    if (GameState.currentMode === 'counting') {
-        if (e.key === 'ArrowUp') adjustCount(1);
-        if (e.key === 'ArrowDown') adjustCount(-1);
-        if (e.key === 'Enter' && !elements.submitCount.disabled) submitCount();
-        if (e.key === ' ') nextDrill();
-    }
+if (GameState.currentMode === 'classic') {
+    // Classic mode shortcuts could be added here if needed
+}
 
-    if (GameState.currentMode === 'fullplay' && elements.actionButtons.style.display !== 'none') {
-        if (e.key === 'h') playerAction('hit');
-        if (e.key === 's') playerAction('stand');
-        if (e.key === 'd') playerAction('double');
-        if (e.key === 'p') playerAction('split');
-        if (e.key === 'r') playerAction('surrender');
+if (e.key === 'Escape') {
+    if (elements.settingsPanel.classList.contains('active')) {
+        toggleSettings();
+    } else if (elements.countCheckModal.classList.contains('active')) {
+        elements.countCheckModal.classList.remove('active');
+    } else {
+        backToMenu();
     }
-
-    if (GameState.currentMode === 'strategy') {
-        if (e.key === 'h') strategyAction('hit');
-        if (e.key === 's') strategyAction('stand');
-        if (e.key === 'd') strategyAction('double');
-        if (e.key === 'p') strategyAction('split');
-        if (e.key === 'r') strategyAction('surrender');
-        if (e.key === ' ') nextStrategyHand();
-    }
-
-    if (e.key === 'Escape') {
-        if (elements.settingsPanel.classList.contains('active')) {
-            toggleSettings();
-        } else if (elements.countCheckModal.classList.contains('active')) {
-            elements.countCheckModal.classList.remove('active');
-        } else {
-            backToMenu();
-        }
-    }
+}
 });
 
 // ============================================================================

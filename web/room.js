@@ -412,7 +412,7 @@ function dealMultiplayerRound(state) {
     broadcastGameState(state);
     renderMultiplayerGame();
 }
-}
+
 
 function handleGameStateUpdate(state) {
     RoomState.gameState = state;
@@ -724,6 +724,11 @@ async function mpConfirmBet() {
     showToast('✓', 'Bet Placed. Waiting for others...');
 
     await broadcastAction('bet', { amount: RoomState.currentBet });
+
+    // If we're not connected to Supabase, handle locally
+    if (!roomChannel) {
+        handlePlayerAction({ playerId: RoomState.playerId, action: 'bet', data: { amount: RoomState.currentBet } });
+    }
 
     // Host will process logic
 }

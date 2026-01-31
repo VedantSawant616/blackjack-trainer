@@ -310,13 +310,18 @@ async function subscribeToRoom(roomCode) {
     roomChannel = supabaseClient.channel(`room:${roomCode}`, {
         config: {
             presence: { key: RoomState.playerId },
-            broadcast: { self: true }
+            broadcast: {
+                self: false,  // Changed to false - host sends, non-hosts receive
+                ack: true     // Request acknowledgment
+            }
         }
     });
 
+    console.log('Channel created, setting up listeners...');
+
     // Handle presence sync
     roomChannel.on('presence', { event: 'sync' }, () => {
-        console.log('Presence sync received');
+        console.log('✓ Presence sync received');
         const presenceState = roomChannel.presenceState();
         const players = Object.values(presenceState).flat();
         RoomState.players = players;
@@ -324,26 +329,28 @@ async function subscribeToRoom(roomCode) {
         checkStartConditions();
     });
 
-    // Handle game state broadcasts
+    // Handle game state broadcasts - MORE VERBOSE LOGGING
     roomChannel.on('broadcast', { event: 'game_state' }, ({ payload }) => {
-        console.log('!!! BROADCAST RECEIVED - game_state !!!', payload);
-        showToast('📨', 'Broadcast received!'); // Debug toast
+        console.log('!!! GAME STATE BROADCAST RECEIVED !!!');
+        console.log('Payload:', payload);
+        console.log('Event type:', 'game_state');
+        showToast('📨', 'Broadcast received!');
         handleGameStateUpdate(payload);
     });
 
     // Handle player actions
     roomChannel.on('broadcast', { event: 'player_action' }, ({ payload }) => {
-        console.log('!!! BROADCAST RECEIVED - player_action !!!');
+        console.log('!!! PLAYER ACTION BROADCAST RECEIVED !!!');
         handlePlayerAction(payload);
     });
 
-    console.log('Attempting to subscribe to channel...');
+    console.log('Listeners configured. Subscribing to channel...');
     const subscribeResult = await roomChannel.subscribe();
     console.log('Subscribe result:', subscribeResult);
 
     if (subscribeResult === 'SUBSCRIBED') {
         console.log('✅ Successfully subscribed to room channel');
-        showToast('✅', 'Connected to room!');
+        showToast('✅', 'Connected!');
     } else {
         console.error('❌ Failed to subscribe:', subscribeResult);
         showToast('❌', 'Connection failed!');

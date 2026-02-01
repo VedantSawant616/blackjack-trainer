@@ -1405,15 +1405,7 @@ body {
         grid-template-columns: 1fr;
     }
 
-    .multiplayer-hands {
-        flex-direction: column;
-        align-items: center;
-    }
-
-    .mp-player-hand {
-        width: 100%;
-        max-width: 250px;
-    }
+    /* Removed vertical stacking for multiplayer hands to allow horizontal wrap */
 }
 
 /* Betting Overlay */

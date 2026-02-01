@@ -635,10 +635,19 @@ function handlePlayerAction({ playerId, action, data }) {
         state.bets[playerId] = data.amount;
         state.playerBankrolls[playerId] = (state.playerBankrolls[playerId] || 1000) - data.amount;
 
+        console.log('=== BET RECEIVED ===');
+        console.log('Player:', playerId, 'bet:', data.amount);
+        console.log('All bets:', state.bets);
+        console.log('Players in room:', RoomState.players.map(p => p.id));
+
         const allBet = RoomState.players.every(p => state.bets[p.id] > 0);
+        console.log('All players bet?', allBet);
+
         if (allBet) {
+            console.log('✅ All players have bet! Starting round...');
             dealMultiplayerRound(state);
         } else {
+            console.log('⏳ Waiting for more bets...');
             broadcastGameState(state);
             renderMultiplayerGame();
         }

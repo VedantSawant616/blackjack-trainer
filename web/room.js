@@ -1017,28 +1017,22 @@ function renderMultiplayerGame() {
         });
     });
 
-    // Show/hide action buttons
+    // --- 4. ACTION BUTTONS ---
     const actionButtons = document.getElementById('mp-action-buttons');
-    if (state.currentPlayerId === RoomState.playerId && state.phase === 'playing') {
+
+    // Define isYourTurn before using it
+    const isYourTurn = state.phase === 'playing' && state.currentPlayerId === RoomState.playerId;
+
+    if (isYourTurn) {
         actionButtons.style.display = 'flex';
 
-        // Enable/disable SPLIT button
-        const myHandsArray = state.playerHands[RoomState.playerId];
-        const myCurrentHandIndex = state.currentHandIndex[RoomState.playerId] || 0;
-        const myHand = myHandsArray[myCurrentHandIndex];
+        const playerHandsArray = state.playerHands[RoomState.playerId];
+        const handIndex = state.currentHandIndex[RoomState.playerId] || 0;
+        const playerHand = playerHandsArray?.[handIndex];
+
         const splitBtn = document.getElementById('mp-btn-split');
         const doubleBtn = document.getElementById('mp-btn-double');
 
-        if (splitBtn && myHand) {
-            // Can only split if: exactly 2 cards, same rank, and enough bankroll
-            const canSplit = myHand.cards.length === 2 &&
-                myHand.cards[0].rank === myHand.cards[1].rank &&
-                state.playerBankrolls[RoomState.playerId] >= myHand.bet;
-            splitBtn.disabled = !canSplit;
-            splitBtn.style.opacity = canSplit ? '1' : '0.5';
-        }
-
-        // Can only double on first action (2 cards)
         if (doubleBtn && myHand) {
             const canDouble = myHand.cards.length === 2 &&
                 state.playerBankrolls[RoomState.playerId] >= myHand.bet;

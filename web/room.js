@@ -846,26 +846,31 @@ function renderMultiplayerGame() {
     const bettingArea = document.getElementById('mp-betting-area');
     const myBet = state.bets[RoomState.playerId] || 0;
 
+    console.log('=== BETTING DISPLAY DEBUG ===');
+    console.log('Phase:', state.phase);
+    console.log('myBet from state.bets:', myBet);
+    console.log('RoomState.currentBet:', RoomState.currentBet);
+
     if (state.phase === 'betting') {
         const myBankroll = state.playerBankrolls[RoomState.playerId] || 1000;
         RoomState.bankroll = myBankroll; // Sync local bankroll
         document.getElementById('mp-my-bankroll').textContent = myBankroll;
 
-        // Reset current bet if starting new round (haven't bet yet)
-        if (myBet === 0) {
-            RoomState.currentBet = 0;
-        }
-
         if (myBet > 0) {
             // Already bet, waiting for others
+            console.log('Branch: Already bet, hiding betting area');
             bettingArea.style.display = 'none';
             const statusEl = document.getElementById('mp-game-status');
             const betCount = Object.values(state.bets).filter(b => b > 0).length;
             statusEl.textContent = `Bet Placed: $${myBet}. Waiting for others (${betCount}/${RoomState.players.length})...`;
         } else {
             // Need to bet
+            console.log('Branch: Need to bet, showing betting area');
             bettingArea.style.display = 'flex';
+            console.log('Setting mp-my-bet textContent to:', RoomState.currentBet);
             document.getElementById('mp-my-bet').textContent = RoomState.currentBet;
+            console.log('mp-my-bet element:', document.getElementById('mp-my-bet'));
+            console.log('mp-my-bet textContent after update:', document.getElementById('mp-my-bet').textContent);
 
             const statusEl = document.getElementById('mp-game-status');
             const betCount = Object.values(state.bets).filter(b => b > 0).length;

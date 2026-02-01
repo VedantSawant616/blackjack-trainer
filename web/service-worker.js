@@ -1,5 +1,5 @@
 // Service Worker for Blackjack Trainer PWA
-const CACHE_NAME = 'blackjack-trainer-v3';
+const CACHE_NAME = 'blackjack-trainer-v4';
 const urlsToCache = [
     '/',
     '/index.html',

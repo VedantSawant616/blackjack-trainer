@@ -1841,3 +1841,181 @@ body {
         transform: translateX(5px);
     }
 }
+
+/* ========================================
+   Compact Desktop Layout - Fit to Screen
+   ======================================== */
+
+/* Make the table container fill available height without overflow */
+#multiplayer-game .table-container,
+#classic-play .table-container {
+    min-height: auto;
+    height: calc(100vh - 120px);
+    padding: 0.5rem;
+    overflow: hidden;
+}
+
+/* Reduce felt padding and min-height */
+#multiplayer-game .felt,
+#classic-play .felt {
+    min-height: auto;
+    height: 100%;
+    padding: 1rem 1.5rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+/* Compact dealer section */
+#multiplayer-game .dealer-section,
+#classic-play .dealer-section {
+    padding: 0.5rem 0;
+    margin-bottom: 0.5rem;
+}
+
+/* Smaller cards for better fit */
+#multiplayer-game .card,
+#classic-play .card {
+    width: 70px;
+    height: 100px;
+}
+
+#multiplayer-game .card-rank {
+    font-size: 1.4rem;
+}
+
+#multiplayer-game .card-suit {
+    font-size: 1rem;
+}
+
+/* Compact cards row */
+#multiplayer-game .cards-row,
+#classic-play .cards-row {
+    min-height: 110px;
+    padding: 0.5rem 0;
+    gap: 0.5rem;
+}
+
+/* Compact game info */
+#multiplayer-game .game-info {
+    margin: 0.5rem 0;
+}
+
+/* Smaller info chip */
+#multiplayer-game .info-chip {
+    padding: 0.3rem 1rem;
+    font-size: 0.85rem;
+}
+
+/* Compact player hands area */
+#multiplayer-game .multiplayer-hands {
+    flex: 1;
+    overflow-y: auto;
+    gap: 0.75rem;
+    padding: 0.5rem;
+    margin-top: 0.5rem;
+}
+
+/* Smaller player hand cards */
+#multiplayer-game .mp-player-hand {
+    padding: 0.5rem;
+    min-width: 160px;
+}
+
+#multiplayer-game .mp-player-hand .card {
+    width: 55px;
+    height: 78px;
+}
+
+#multiplayer-game .mp-player-hand .card-rank {
+    font-size: 1.1rem;
+}
+
+#multiplayer-game .mp-player-hand .card-suit {
+    font-size: 0.8rem;
+}
+
+#multiplayer-game .mp-player-name {
+    font-size: 0.8rem;
+    margin-bottom: 0.25rem;
+}
+
+#multiplayer-game .mp-player-value {
+    font-size: 0.9rem;
+}
+
+#multiplayer-game .mp-player-cards {
+    margin: 0.25rem 0;
+    gap: 0.25rem;
+}
+
+/* Compact action buttons */
+#multiplayer-game .action-buttons {
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+}
+
+#multiplayer-game .action-btn {
+    padding: 0.5rem 1rem;
+    font-size: 0.85rem;
+}
+
+/* Compact betting area */
+#multiplayer-game .betting-area {
+    padding: 0.75rem;
+}
+
+#multiplayer-game .chip-stack {
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+}
+
+#multiplayer-game .chip {
+    width: 50px;
+    height: 50px;
+    font-size: 0.9rem;
+}
+
+/* Compact bankroll display */
+#multiplayer-game .bankroll {
+    margin-top: 0.25rem;
+    font-size: 0.9rem;
+}
+
+/* Compact control bar */
+.control-bar {
+    padding: 0.5rem 1rem;
+}
+
+/* Hide card deck on smaller screens to save space */
+@media (max-height: 700px) {
+    .card-deck {
+        display: none;
+    }
+
+    #multiplayer-game .felt {
+        padding: 0.75rem 1rem;
+    }
+}
+
+/* Extra compact for very small screens */
+@media (max-height: 600px) {
+
+    #multiplayer-game .card,
+    #classic-play .card {
+        width: 55px;
+        height: 78px;
+    }
+
+    #multiplayer-game .cards-row {
+        min-height: 85px;
+    }
+
+    .header {
+        padding: 0.5rem 1rem;
+    }
+
+    .logo {
+        font-size: 1.1rem;
+    }
+}

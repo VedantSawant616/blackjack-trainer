@@ -1910,7 +1910,7 @@ body {
 /* Compact player hands area */
 #multiplayer-game .multiplayer-hands {
     flex: 1;
-    overflow-y: auto;
+    overflow: hidden;
     gap: 0.75rem;
     padding: 0.5rem;
     margin-top: 0.5rem;

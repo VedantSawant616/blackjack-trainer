@@ -341,6 +341,8 @@ async function subscribeToRoom(roomCode) {
     // Handle player actions
     roomChannel.on('broadcast', { event: 'player_action' }, ({ payload }) => {
         console.log('!!! PLAYER ACTION BROADCAST RECEIVED !!!');
+        console.log('Payload:', payload);
+        console.log('Action:', payload.action, 'from player:', payload.playerId);
         handlePlayerAction(payload);
     });
 

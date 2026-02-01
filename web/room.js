@@ -1086,8 +1086,9 @@ async function mpPlayerAction(action) {
 
     await broadcastAction(action, {});
 
-    // If we're not connected to Supabase, handle locally
-    if (!roomChannel) {
+    // Host must process actions locally since self:false means we don't receive our own broadcasts
+    // Non-hosts also need local handling if disconnected
+    if (RoomState.isHost || !roomChannel) {
         handlePlayerAction({ playerId: RoomState.playerId, action, data: {} });
     }
 }

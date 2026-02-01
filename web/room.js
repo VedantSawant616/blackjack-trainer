@@ -1080,6 +1080,10 @@ async function mpPlayerAction(action) {
 
 // Helper functions for UI
 function mpSelectBet(amount) {
+    console.log('mpSelectBet called with amount:', amount);
+    console.log('Current bet before:', RoomState.currentBet);
+    console.log('Bankroll:', RoomState.bankroll);
+
     if (amount === -1) {
         RoomState.currentBet = 0;
     } else {
@@ -1090,8 +1094,12 @@ function mpSelectBet(amount) {
             if (window.soundManager) {
                 window.soundManager.playChip();
             }
+        } else {
+            console.log('Bet rejected: would exceed bankroll');
         }
     }
+
+    console.log('Current bet after:', RoomState.currentBet);
     renderMultiplayerGame();
 }
 

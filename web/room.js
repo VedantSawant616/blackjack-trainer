@@ -417,6 +417,7 @@ function showLobby() {
 
 function updatePlayersUI() {
     const container = document.getElementById('players-list');
+    const skeleton = document.getElementById('players-skeleton');
     container.innerHTML = '';
 
     // If no players from Supabase, show local player
@@ -426,6 +427,10 @@ function updatePlayersUI() {
         isHost: RoomState.isHost,
         isReady: RoomState.isReady
     }];
+
+    // Hide skeleton, show actual players
+    if (skeleton) skeleton.style.display = 'none';
+    container.style.display = 'block';
 
     players.forEach(player => {
         const playerEl = document.createElement('div');
@@ -867,9 +872,13 @@ function renderMultiplayerGame() {
             statusEl.textContent = `Betting Phase: ${betCount}/${RoomState.players.length} players ready`;
         }
 
-        // Ensure hands are cleared during betting
+        // Show skeleton, hide actual hands during betting
+        const handsSkeleton = document.getElementById('mp-hands-skeleton');
+        const handsContainer = document.getElementById('mp-players-hands');
+        if (handsSkeleton) handsSkeleton.style.display = 'flex';
+        if (handsContainer) handsContainer.style.display = 'none';
+
         document.getElementById('mp-dealer-cards').innerHTML = '';
-        document.getElementById('mp-players-hands').innerHTML = '';
         return;
     } else {
         bettingArea.style.display = 'none';
@@ -899,6 +908,11 @@ function renderMultiplayerGame() {
 
     // --- 3. SMART RENDER PLAYERS ---
     const handsContainer = document.getElementById('mp-players-hands');
+    const handsSkeleton = document.getElementById('mp-hands-skeleton');
+
+    // Hide skeleton, show actual hands during play
+    if (handsSkeleton) handsSkeleton.style.display = 'none';
+    if (handsContainer) handsContainer.style.display = 'block';
 
     // Remove hands of players who left
     Array.from(handsContainer.children).forEach(child => {
@@ -968,10 +982,10 @@ function renderMultiplayerGame() {
             // Show total bankroll only on first hand, show bet on all hands
             if (handIndex === 0) {
                 bankrollDiv.innerHTML = (state.phase === 'playing' || state.phase === 'results') ?
-                    `<div class="mp-player-bankroll">$${state.playerBankrolls[player.id]} (Bet: $${handData.bet})</div>` : '';
+                    `<div class="mp-player-bankroll">${state.playerBankrolls[player.id]} (Bet: ${handData.bet})</div>` : '';
             } else {
                 bankrollDiv.innerHTML = (state.phase === 'playing' || state.phase === 'results') ?
-                    `<div class="mp-player-bankroll">(Bet: $${handData.bet})</div>` : '';
+                    `<div class="mp-player-bankroll">(Bet: ${handData.bet})</div>` : '';
             }
 
             const turnDiv = handEl.querySelector('.turn-indicator-container');
@@ -1071,6 +1085,11 @@ function mpSelectBet(amount) {
     } else {
         if (RoomState.currentBet + amount <= RoomState.bankroll) {
             RoomState.currentBet += amount;
+
+            // Play chip sound
+            if (window.soundManager) {
+                window.soundManager.playChip();
+            }
         }
     }
     renderMultiplayerGame();

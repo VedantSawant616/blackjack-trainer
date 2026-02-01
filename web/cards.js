@@ -277,6 +277,11 @@ class Hand {
             const el = card.toElement(faceDown);
             el.style.animationDelay = `${index * 0.1}s`;
             container.appendChild(el);
+
+            // Play card dealing sound with delay
+            if (window.soundManager) {
+                window.soundManager.playCardDeal(index * 0.1);
+            }
         });
     }
 }

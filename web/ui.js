@@ -255,7 +255,7 @@ function resetFullPlayUI() {
             <div class="chip chip-100" onclick="addBet(100)">100</div>
         </div>
         <div class="current-bet">
-            <span>Bet: $</span><span id="current-bet-amount">0</span>
+            <span>Bet: </span><span id="current-bet-amount">0</span>
         </div>
         <button class="btn btn-primary" id="deal-btn" onclick="dealHand()">DEAL</button>
     `;
@@ -655,7 +655,7 @@ function resetClassicPlayUI() {
             <div class="chip chip-100" onclick="classicAddBet(100)">100</div>
         </div>
         <div class="current-bet">
-            <span>Bet: $</span><span id="classic-bet-amount">0</span>
+            <span>Bet: </span><span id="classic-bet-amount">0</span>
         </div>
         <button class="btn btn-primary" id="classic-deal-btn" onclick="classicDealHand()">DEAL</button>
     `;
@@ -672,6 +672,11 @@ function classicAddBet(amount) {
     if (classicState.bankroll >= amount + classicState.currentBet) {
         classicState.currentBet += amount;
         elements.classicBetAmount.textContent = classicState.currentBet;
+
+        // Play chip sound
+        if (window.soundManager) {
+            window.soundManager.playChip();
+        }
     }
 }
 
@@ -1068,6 +1073,12 @@ function classicEndHand(forceResult, forceMessage) {
     // Calculate net for message
     const totalBet = hands.reduce((sum, h) => sum + h.bet, 0);
     const net = totalWin - totalBet;
+
+    // Show payout animation
+    const mainResult = hands.length === 1 ? result : (net > 0 ? 'win' : (net < 0 ? 'lose' : 'push'));
+    if (window.showPayoutAnimation) {
+        showPayoutAnimation(mainResult, net);
+    }
 
     let resultColor = net > 0 ? 'green' : (net < 0 ? 'red' : 'gold');
 

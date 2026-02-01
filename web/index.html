@@ -22,20 +22,6 @@
         <!-- Header -->
         <header class="header">
             <h1 class="logo">♠ Blackjack For The Boys</h1>
-            <div class="header-stats">
-                <div class="stat-item">
-                    <span class="stat-label">Session</span>
-                    <span class="stat-value" id="session-hands">0</span>
-                </div>
-                <div class="stat-item">
-                    <span class="stat-label">Accuracy</span>
-                    <span class="stat-value" id="session-accuracy">--%</span>
-                </div>
-                <div class="stat-item">
-                    <span class="stat-label">Streak</span>
-                    <span class="stat-value" id="current-streak">0</span>
-                </div>
-            </div>
         </header>
 
         <!-- Mode Selection Screen -->
@@ -86,6 +72,15 @@
                         <div class="hand-value" id="classic-dealer-value"></div>
                     </div>
 
+                    <!-- Card Deck -->
+                    <div class="card-deck">
+                        <div class="deck-card"></div>
+                        <div class="deck-card"></div>
+                        <div class="deck-card"></div>
+                        <div class="deck-card"></div>
+                        <div class="deck-card"></div>
+                    </div>
+
                     <!-- Center Info -->
                     <div class="game-info">
                         <div class="info-chip" id="classic-game-status">Place Your Bet</div>
@@ -117,14 +112,14 @@
                             <div class="chip chip-100" onclick="classicAddBet(100)">100</div>
                         </div>
                         <div class="current-bet">
-                            <span>Bet: $</span><span id="classic-bet-amount">0</span>
+                            <span>Bet: </span><span id="classic-bet-amount">0</span>
                         </div>
                         <button class="btn btn-primary" id="classic-deal-btn" onclick="classicDealHand()">DEAL</button>
                     </div>
 
                     <!-- Bankroll -->
                     <div class="bankroll">
-                        <span>Bankroll: $</span><span id="classic-bankroll">1000</span>
+                        <span>Bankroll: </span><span id="classic-bankroll">1000</span>
                     </div>
                 </div>
             </div>
@@ -183,7 +178,14 @@
 
             <h2>Waiting for Players...</h2>
 
-            <div class="players-list" id="players-list">
+            <!-- Skeleton Loader for Players List -->
+            <div class="skeleton-container" id="players-skeleton">
+                <div class="skeleton skeleton-player-item"></div>
+                <div class="skeleton skeleton-player-item"></div>
+                <div class="skeleton skeleton-player-item"></div>
+            </div>
+
+            <div class="players-list" id="players-list" style="display: none;">
                 <!-- Players will be inserted here -->
             </div>
 
@@ -208,14 +210,30 @@
                     <div class="hand-value" id="mp-dealer-value"></div>
                 </div>
 
+                <!-- Card Deck -->
+                <div class="card-deck">
+                    <div class="deck-card"></div>
+                    <div class="deck-card"></div>
+                    <div class="deck-card"></div>
+                    <div class="deck-card"></div>
+                    <div class="deck-card"></div>
+                </div>
+
                 <!-- Game Status -->
                 <div class="game-info">
                     <div class="info-chip" id="mp-game-status">Waiting for players...</div>
                     <div id="connection-status" class="connection-status">● Connected</div>
                 </div>
 
+                <!-- Skeleton Loader for Player Hands -->
+                <div class="skeleton-cards-row" id="mp-hands-skeleton">
+                    <div class="skeleton skeleton-card"></div>
+                    <div class="skeleton skeleton-card"></div>
+                    <div class="skeleton skeleton-card"></div>
+                </div>
+
                 <!-- All Players Hands -->
-                <div class="multiplayer-hands" id="mp-players-hands">
+                <div class="multiplayer-hands" id="mp-players-hands" style="display: none;">
                     <!-- Player hands will be inserted here -->
                 </div>
 
@@ -239,14 +257,14 @@
                         <div class="chip chip-100" onclick="mpSelectBet(100)">100</div>
                     </div>
                     <div class="current-bet">
-                        <span>Bet: $</span><span id="mp-my-bet">0</span>
+                        <span>Bet: </span><span id="mp-my-bet">0</span>
                     </div>
                     <button class="btn btn-primary" onclick="mpConfirmBet()">Place Bet</button>
                 </div>
 
                 <!-- Bankroll -->
                 <div class="bankroll">
-                    <span>Bankroll: $</span><span id="mp-my-bankroll">1000</span>
+                    <span>Bankroll: </span><span id="mp-my-bankroll">1000</span>
                 </div>
             </div>
         </div>
@@ -263,8 +281,16 @@
         <span class="toast-icon"></span>
         <span class="toast-message"></span>
     </div>
+
+    <!-- Payout Overlay -->
+    <div class="payout-overlay" id="payout-overlay">
+        <div class="payout-text" id="payout-text"></div>
+        <div class="payout-amount" id="payout-amount"></div>
+    </div>
     </div>
 
+    <script src="sounds.js"></script>
+    <script src="payouts.js"></script>
     <script src="cards.js"></script>
     <script src="game.js"></script>
     <script src="ui.js"></script>

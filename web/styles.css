@@ -1910,10 +1910,16 @@ body {
 /* Compact player hands area */
 #multiplayer-game .multiplayer-hands {
     flex: 1;
-    overflow: hidden;
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: flex-start;
+    align-content: flex-start;
     gap: 0.75rem;
     padding: 0.5rem;
     margin-top: 0.5rem;
+    /* overflow: hidden; Removed to ensure visibility, handled by flex wrapping */
 }
 
 /* Smaller player hand cards */

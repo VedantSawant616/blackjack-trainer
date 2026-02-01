@@ -1033,9 +1033,17 @@ function renderMultiplayerGame() {
         const splitBtn = document.getElementById('mp-btn-split');
         const doubleBtn = document.getElementById('mp-btn-double');
 
-        if (doubleBtn && myHand) {
-            const canDouble = myHand.cards.length === 2 &&
-                state.playerBankrolls[RoomState.playerId] >= myHand.bet;
+        if (splitBtn && playerHand) {
+            const canSplit = playerHand.cards.length === 2 &&
+                playerHand.cards[0].rank === playerHand.cards[1].rank &&
+                state.playerBankrolls[RoomState.playerId] >= playerHand.bet;
+            splitBtn.disabled = !canSplit;
+            splitBtn.style.opacity = canSplit ? '1' : '0.5';
+        }
+
+        if (doubleBtn && playerHand) {
+            const canDouble = playerHand.cards.length === 2 &&
+                state.playerBankrolls[RoomState.playerId] >= playerHand.bet;
             doubleBtn.disabled = !canDouble;
             doubleBtn.style.opacity = canDouble ? '1' : '0.5';
         }

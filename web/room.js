@@ -1124,11 +1124,32 @@ async function mpConfirmBet() {
         showToast('!', 'Place a bet first');
         return;
     }
+
+    console.log('===  CONFIRMING BET ===');
+    console.log('Bet amount:', RoomState.currentBet);
+    console.log('Player ID:', RoomState.playerId);
+    console.log('Is Host:', RoomState.isHost);
+
     showToast('✓', 'Bet Placed. Waiting for others...');
+
+    // If host, process bet immediately (don't wait for broadcast loop)
+    if (RoomState.isHost) {
+        console.log('Host placing bet - processing directly');
+        handlePlayerAction({
+            playerId: RoomState.playerId,
+            action: 'bet',
+            data: { amount: RoomState.currentBet }
+        });
+    }
+
+    // Also broadcast for other players
+    console.log('Broadcasting bet action...');
     await broadcastAction('bet', { amount: RoomState.currentBet });
+    console.log('Bet broadcast sent');
 
     // If not connected, handle immediately (offline testing)
-    if (!roomChannel) {
+    if (!roomChannel && !RoomState.isHost) {
+        console.log('No channel - handling locally');
         handlePlayerAction({ playerId: RoomState.playerId, action: 'bet', data: { amount: RoomState.currentBet } });
     }
 }
